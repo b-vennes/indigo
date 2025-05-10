@@ -4,11 +4,19 @@ import Misc._
 
 Global / onChangedBuildSource := ReloadOnSourceChanges
 
-val scala3Version = "3.4.1"
+val scala3Version = "3.6.4"
 
-ThisBuild / versionScheme                                  := Some("early-semver")
-ThisBuild / scalafixDependencies += "com.github.liancheng" %% "organize-imports" % "0.6.0"
-ThisBuild / scalaVersion                                   := scala3Version
+ThisBuild / versionScheme := Some("early-semver")
+ThisBuild / scalaVersion  := scala3Version
+
+inThisBuild(
+  List(
+    scalaVersion      := scala3Version,
+    semanticdbEnabled := true,
+    semanticdbVersion := scalafixSemanticdb.revision,
+    scalafixOnCompile := true
+  )
+)
 
 lazy val indigoVersion = IndigoVersion.getVersion
 
@@ -20,11 +28,8 @@ lazy val commonSettings: Seq[sbt.Def.Setting[_]] = Seq(
   testFrameworks += new TestFramework("munit.Framework"),
   Test / scalaJSLinkerConfig ~= { _.withModuleKind(ModuleKind.CommonJSModule) },
   scalacOptions ++= Seq("-language:strictEquality"),
-  scalafixOnCompile := true,
-  semanticdbEnabled := true,
-  semanticdbVersion := scalafixSemanticdb.revision,
-  autoAPIMappings   := true,
-  logo              := name.value
+  autoAPIMappings := true,
+  logo            := name.value
 )
 
 lazy val neverPublish = Seq(
@@ -47,7 +52,9 @@ lazy val publishSettings = {
         email = "indigo@purplekingdomgames.com",
         url = url("https://github.com/davesmith00000")
       )
-    )
+    ),
+    sonatypeCredentialHost := "oss.sonatype.org",
+    sonatypeRepository     := "https://oss.sonatype.org/service/local"
   )
 }
 
@@ -106,6 +113,7 @@ lazy val sandbox =
       name := "sandbox",
       indigoOptions :=
         IndigoOptions.defaults
+          .withWindowSize(800, 600)
           .withTitle("Sandbox")
           .withBackgroundColor("black")
           .withAssetDirectory("sandbox/assets/"),
@@ -113,14 +121,13 @@ lazy val sandbox =
         IndigoGenerators("example")
           .embedFont(
             "TestFont",
-            os.pwd / "sandbox" / "assets" / "fonts" / "pixelated.ttf",
+            os.pwd / "sandbox" / "assets" / "fonts" / "VCR_OSD_MONO_1.001.ttf",
             FontOptions(
               "test font",
-              32,
-              CharSet.fromUniqueString("The quick brown fox\njumps over the\nlazy dog.")
+              16,
+              CharSet.ASCII
             )
               .withColor(RGB.White)
-              .withMaxCharactersPerLine(16)
               .noAntiAliasing,
             os.pwd / "sandbox" / "assets" / "generated"
           )
@@ -170,6 +177,10 @@ lazy val physicsOptions =
     .withBackgroundColor("black")
     .withAssetDirectory("physics/assets/")
     .withWindowSize(800, 600)
+    .excludeAssets {
+      case p if p.endsWith(os.RelPath.rel / ".DS_Store") => true
+      case _                                             => false
+    }
 
 lazy val physics =
   project
@@ -184,6 +195,20 @@ lazy val physics =
       Compile / sourceGenerators += Def.task {
         IndigoGenerators("example")
           .generateConfig("Config", physicsOptions)
+          .embedFont(
+            moduleName = "PixelatedFont",
+            font = os.pwd / "physics" / "generator-data" / "pixelated.ttf",
+            fontOptions = FontOptions(
+              fontKey = "Pixelated",
+              fontSize = 32,
+              charSet = CharSet.ASCII,
+              color = RGB.White,
+              antiAlias = false,
+              layout = FontLayout.default
+            ),
+            imageOut = os.pwd / "physics" / "assets" / "generated"
+          )
+          .listAssets("Assets", physicsOptions.assets)
           .toSourceFiles((Compile / sourceManaged).value)
       }
     )

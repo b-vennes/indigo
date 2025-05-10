@@ -5,47 +5,52 @@ import scala.annotation.targetName
 object syntax:
 
   extension (d: Double)
-    def radians: Radians = Radians(d)
-    def second: Seconds  = Seconds(d)
-    def seconds: Seconds = Seconds(d)
-    def volume: Volume   = Volume(d)
-    def zoom: Zoom       = Zoom(d)
+    def toRadians: Radians = Radians(d)
+    def radians: Radians   = Radians(d)
+    def toSeconds: Seconds = Seconds(d)
+    def second: Seconds    = Seconds(d)
+    def seconds: Seconds   = Seconds(d)
+    def toVolume: Volume   = Volume(d)
+    def volume: Volume     = Volume(d)
+    def toZoom: Zoom       = Zoom(d)
+    def zoom: Zoom         = Zoom(d)
 
   extension (i: Int)
-    def depth: Depth   = Depth(i)
-    def fps: FPS       = FPS(i)
-    def pixels: Pixels = Pixels(i)
+    def toFPS: FPS       = FPS(i)
+    def fps: FPS         = FPS(i)
+    def toMillis: Millis = Millis(i)
+    def millis: Millis   = Millis(i)
 
-  extension (l: Long) def millis: Millis = Millis(l)
+  extension (l: Long)
+    def toMillis: Millis = Millis(l)
+    def millis: Millis   = Millis(l)
 
   extension (s: String)
-    def animationKey: AnimationKey         = AnimationKey(s)
-    def assetName: AssetName               = AssetName(s)
-    def assetPath: AssetPath               = AssetPath(s)
-    def assetTag: AssetTag                 = AssetTag(s)
-    def cloneId: CloneId                   = CloneId(s)
-    def cycleLabel: CycleLabel             = CycleLabel(s)
-    def fontKey: FontKey                   = FontKey(s)
-    def fontFamily: FontFamily             = FontFamily(s)
-    def bindingKey: BindingKey             = BindingKey(s)
-    def scene: scenes.SceneName            = scenes.SceneName(s)
-    def shaderId: ShaderId                 = ShaderId(s)
-    def uniform: Uniform                   = Uniform(s)
-    def uniformBlockName: UniformBlockName = UniformBlockName(s)
+    def toAnimationKey: AnimationKey = AnimationKey(s)
+    def toAssetName: AssetName       = AssetName(s)
+    def toAssetPath: AssetPath       = AssetPath(s)
+    def toAssetTag: AssetTag         = AssetTag(s)
+    def toBindingKey: BindingKey     = BindingKey(s)
+    def toLayerKey: LayerKey         = LayerKey(s)
+    def toCloneId: CloneId           = CloneId(s)
+    def toCycleLabel: CycleLabel     = CycleLabel(s)
+    def toFontKey: FontKey           = FontKey(s)
+    def toScene: scenes.SceneName    = scenes.SceneName(s)
+    def toShaderId: ShaderId         = ShaderId(s)
 
-  extension (t: (Double, Double)) def vector2: Vector2 = Vector2(t._1, t._2)
+  extension (t: (Double, Double)) def toVector2: Vector2 = Vector2(t._1, t._2)
 
   extension (t: (Double, Double, Double))
-    def rgb: RGB         = RGB(t._1, t._2, t._3)
-    def vector3: Vector3 = Vector3(t._1, t._2, t._3)
+    def toRGB: RGB         = RGB(t._1, t._2, t._3)
+    def toVector3: Vector3 = Vector3(t._1, t._2, t._3)
 
   extension (t: (Double, Double, Double, Double))
-    def rgba: RGBA       = RGBA(t._1, t._2, t._3, t._4)
-    def vector4: Vector4 = Vector4(t._1, t._2, t._3, t._4)
+    def toRGBA: RGBA       = RGBA(t._1, t._2, t._3, t._4)
+    def toVector4: Vector4 = Vector4(t._1, t._2, t._3, t._4)
 
   extension (t: (Int, Int))
-    def point: Point = Point(t._1, t._2)
-    def size: Size   = Size(t._1, t._2)
+    def toPoint: Point = Point(t._1, t._2)
+    def toSize: Size   = Size(t._1, t._2)
 
   extension [A](values: scalajs.js.Array[A]) def toBatch: Batch[A] = Batch.fromJSArray(values)
   extension [A](values: Array[A]) def toBatch: Batch[A]            = Batch.fromArray(values)
@@ -121,41 +126,55 @@ object syntax:
     export SignalFunction.multiply
   end animations
 
-  // Shaders
   object shaders:
 
-    extension (c: RGBA) def asVec4: vec4 = vec4.fromRGBA(c)
+    extension (c: RGBA)
+      def toUVVec4: ultraviolet.syntax.vec4 =
+        ultraviolet.syntax.vec4(c.r.toFloat, c.g.toFloat, c.b.toFloat, c.a.toFloat)
     extension (c: RGB)
-      def asVec4: vec4 = vec4.fromRGB(c)
-      def asVec3: vec3 = vec3.fromRGB(c)
-    extension (p: Point) def asVec2: vec2     = vec2.fromPoint(p)
-    extension (s: Size) def asVec2: vec2      = vec2.fromSize(s)
-    extension (v: Vector2) def asVec2: vec2   = vec2.fromVector2(v)
-    extension (v: Vector3) def asVec3: vec3   = vec3.fromVector3(v)
-    extension (v: Vector4) def asVec4: vec4   = vec4.fromVector4(v)
-    extension (r: Rectangle) def asVec4: vec4 = vec4.fromRectangle(r)
-    extension (m: Matrix4) def asMat4: mat4   = mat4.fromMatrix4(m)
-    extension (d: Depth) def asFloat: float   = float.fromDepth(d)
-    extension (m: Millis) def asFloat: float  = float.fromMillis(m)
-    extension (r: Radians) def asFloat: float = float.fromRadians(r)
+      def toUVVec3: ultraviolet.syntax.vec3 =
+        ultraviolet.syntax.vec3(c.r.toFloat, c.g.toFloat, c.b.toFloat)
+    extension (p: Point)
+      def toUVVec2: ultraviolet.syntax.vec2 =
+        ultraviolet.syntax.vec2(p.x.toFloat, p.y.toFloat)
+    extension (s: Size)
+      def toUVVec2: ultraviolet.syntax.vec2 =
+        ultraviolet.syntax.vec2(s.width.toFloat, s.height.toFloat)
+    extension (v: Vector2)
+      def toUVVec2: ultraviolet.syntax.vec2 =
+        ultraviolet.syntax.vec2(v.x.toFloat, v.y.toFloat)
+    extension (v: Vector3)
+      def toUVVec3: ultraviolet.syntax.vec3 =
+        ultraviolet.syntax.vec3(v.x.toFloat, v.y.toFloat, v.z.toFloat)
+    extension (v: Vector4)
+      def toUVVec4: ultraviolet.syntax.vec4 =
+        ultraviolet.syntax.vec4(v.x.toFloat, v.y.toFloat, v.z.toFloat, v.w.toFloat)
+    extension (r: Rectangle)
+      def toUVVec4: ultraviolet.syntax.vec4 =
+        ultraviolet.syntax.vec4(r.x.toFloat, r.y.toFloat, r.width.toFloat, r.height.toFloat)
+    extension (m: Matrix4)
+      def toUVMat4: ultraviolet.syntax.mat4 =
+        ultraviolet.syntax.mat4(m.toArray.map(_.toFloat))
+    extension (m: Millis) def toUVFloat: Float  = m.toFloat
+    extension (r: Radians) def toUVFloat: Float = r.toFloat
     extension (s: Seconds)
-      @targetName("ext_Seconds_asFloat")
-      def asFloat: float = float.fromSeconds(s)
+      @targetName("ext_Seconds_toUVFloat")
+      def toUVFloat: Float = s.toFloat
     extension (d: Double)
-      @targetName("ext_Double_asFloat")
-      def asFloat: float = float(d)
+      @targetName("ext_Double_toUVFloat")
+      def toUVFloat: Float = d.toFloat
     extension (i: Int)
-      @targetName("ext_Int_asFloat")
-      def asFloat: float = float(i)
+      @targetName("ext_Int_toUVFloat")
+      def toUVFloat: Float = i.toFloat
     extension (l: Long)
-      @targetName("ext_Long_asFloat")
-      def asFloat: float = float(l)
+      @targetName("ext_Long_toUVFloat")
+      def toUVFloat: Float = l.toFloat
     extension (a: Array[Float])
-      def asMat4: mat4         = mat4(a)
-      def asRawArray: rawArray = rawArray(a)
+      def toUVArray: ultraviolet.syntax.array[Singleton & Int, Float] =
+        ultraviolet.syntax.array(a)
     extension (a: scalajs.js.Array[Float])
-      def asMat4: mat4           = mat4(a.toArray)
-      def asRawArray: rawJSArray = rawJSArray(a)
+      def toUVArray: ultraviolet.syntax.array[Singleton & Int, Float] =
+        ultraviolet.syntax.array(a.toArray)
 
   end shaders
 
@@ -220,13 +239,10 @@ val Texture: shared.materials.Texture.type = shared.materials.Texture
 type BlendMaterial = shared.materials.BlendMaterial
 val BlendMaterial: shared.materials.BlendMaterial.type = shared.materials.BlendMaterial
 
-type ShaderData = shared.materials.ShaderData
-val ShaderData: shared.materials.ShaderData.type = shared.materials.ShaderData
+type ShaderData = shared.shader.ShaderData
+val ShaderData: shared.shader.ShaderData.type = shared.shader.ShaderData
 
-type BlendShaderData = shared.materials.BlendShaderData
-val BlendShaderData: shared.materials.BlendShaderData.type = shared.materials.BlendShaderData
-
-type Shader = shared.shader.Shader
+type ShaderProgram = shared.shader.ShaderProgram
 
 type BlendShader = shared.shader.BlendShader
 val BlendShader: shared.shader.BlendShader.type = shared.shader.BlendShader
@@ -258,41 +274,11 @@ type BlendFragmentEnvReference = shared.shader.library.IndigoUV.BlendFragmentEnv
 type ShaderId = shared.shader.ShaderId
 val ShaderId: shared.shader.ShaderId.type = shared.shader.ShaderId
 
-type Uniform = shared.shader.Uniform
-val Uniform: shared.shader.Uniform.type = shared.shader.Uniform
-
-type UniformBlockName = shared.shader.UniformBlockName
-val UniformBlockName: shared.shader.UniformBlockName.type = shared.shader.UniformBlockName
+type ToUniformBlock[A] = shared.shader.ToUniformBlock[A]
+val ToUniformBlock: shared.shader.ToUniformBlock.type = shared.shader.ToUniformBlock
 
 type UniformBlock = shared.shader.UniformBlock
 val UniformBlock: shared.shader.UniformBlock.type = shared.shader.UniformBlock
-
-type ShaderPrimitive = shared.shader.ShaderPrimitive
-val ShaderPrimitive: shared.shader.ShaderPrimitive.type = shared.shader.ShaderPrimitive
-
-type float = shared.shader.ShaderPrimitive.float
-val float: shared.shader.ShaderPrimitive.float.type = shared.shader.ShaderPrimitive.float
-
-type vec2 = shared.shader.ShaderPrimitive.vec2
-val vec2: shared.shader.ShaderPrimitive.vec2.type = shared.shader.ShaderPrimitive.vec2
-
-type vec3 = shared.shader.ShaderPrimitive.vec3
-val vec3: shared.shader.ShaderPrimitive.vec3.type = shared.shader.ShaderPrimitive.vec3
-
-type vec4 = shared.shader.ShaderPrimitive.vec4
-val vec4: shared.shader.ShaderPrimitive.vec4.type = shared.shader.ShaderPrimitive.vec4
-
-type mat4 = shared.shader.ShaderPrimitive.mat4
-val mat4: shared.shader.ShaderPrimitive.mat4.type = shared.shader.ShaderPrimitive.mat4
-
-type array[T] = shared.shader.ShaderPrimitive.array[T]
-val array: shared.shader.ShaderPrimitive.array.type = shared.shader.ShaderPrimitive.array
-
-type rawArray = shared.shader.ShaderPrimitive.rawArray
-val rawArray: shared.shader.ShaderPrimitive.rawArray.type = shared.shader.ShaderPrimitive.rawArray
-
-type rawJSArray = shared.shader.ShaderPrimitive.rawJSArray
-val rawJSArray: shared.shader.ShaderPrimitive.rawJSArray.type = shared.shader.ShaderPrimitive.rawJSArray
 
 val StandardShaders: shared.shader.StandardShaders.type = shared.shader.StandardShaders
 
@@ -530,9 +516,6 @@ val Matrix3: shared.datatypes.Matrix3.type = shared.datatypes.Matrix3
 type Matrix4 = shared.datatypes.Matrix4
 val Matrix4: shared.datatypes.Matrix4.type = shared.datatypes.Matrix4
 
-type Depth = shared.datatypes.Depth
-val Depth: shared.datatypes.Depth.type = shared.datatypes.Depth
-
 type Radians = shared.datatypes.Radians
 val Radians: shared.datatypes.Radians.type = shared.datatypes.Radians
 
@@ -669,6 +652,9 @@ val Layer: shared.scenegraph.Layer.type = shared.scenegraph.Layer
 type LayerEntry = shared.scenegraph.LayerEntry
 val LayerEntry: shared.scenegraph.LayerEntry.type = shared.scenegraph.LayerEntry
 
+type LayerKey = shared.scenegraph.LayerKey
+val LayerKey: shared.scenegraph.LayerKey.type = shared.scenegraph.LayerKey
+
 type Blending = shared.scenegraph.Blending
 val Blending: shared.scenegraph.Blending.type = shared.scenegraph.Blending
 
@@ -689,11 +675,14 @@ type RenderNode[T <: shared.scenegraph.SceneNode]    = shared.scenegraph.RenderN
 type SceneAudio = shared.scenegraph.SceneAudio
 val SceneAudio: shared.scenegraph.SceneAudio.type = shared.scenegraph.SceneAudio
 
-type Volume = indigo.shared.audio.Volume
-val Volume: indigo.shared.audio.Volume.type = indigo.shared.audio.Volume
+type PlaybackPolicy = indigo.shared.audio.PlaybackPolicy
+val PlaybackPolicy: indigo.shared.audio.PlaybackPolicy.type = indigo.shared.audio.PlaybackPolicy
 
 type Track = indigo.shared.audio.Track
 val Track: indigo.shared.audio.Track.type = indigo.shared.audio.Track
+
+type Volume = indigo.shared.audio.Volume
+val Volume: indigo.shared.audio.Volume.type = indigo.shared.audio.Volume
 
 type PlaybackPattern = shared.scenegraph.PlaybackPattern
 val PlaybackPattern: shared.scenegraph.PlaybackPattern.type = shared.scenegraph.PlaybackPattern
@@ -753,9 +742,6 @@ val Graphic: shared.scenegraph.Graphic.type = shared.scenegraph.Graphic
 type Group = shared.scenegraph.Group
 val Group: shared.scenegraph.Group.type = shared.scenegraph.Group
 
-type TextBox = shared.scenegraph.TextBox
-val TextBox: shared.scenegraph.TextBox.type = shared.scenegraph.TextBox
-
 type Clip[M <: Material] = shared.scenegraph.Clip[M]
 val Clip: shared.scenegraph.Clip.type = shared.scenegraph.Clip
 
@@ -770,41 +756,6 @@ val ClipPlayDirection: shared.scenegraph.ClipPlayDirection.type = shared.scenegr
 
 type ClipPlayMode = shared.scenegraph.ClipPlayMode
 val ClipPlayMode: shared.scenegraph.ClipPlayMode.type = shared.scenegraph.ClipPlayMode
-
-// TextStyle
-
-type TextStyle = shared.datatypes.TextStyle
-val TextStyle: shared.datatypes.TextStyle.type = shared.datatypes.TextStyle
-
-type Font = shared.datatypes.Font
-val Font: shared.datatypes.Font.type = shared.datatypes.Font
-
-type FontFamily = shared.datatypes.FontFamily
-val FontFamily: shared.datatypes.FontFamily.type = shared.datatypes.FontFamily
-
-type FontVariant = shared.datatypes.FontVariant
-val FontVariant: shared.datatypes.FontVariant.type = shared.datatypes.FontVariant
-
-type FontStyle = shared.datatypes.FontStyle
-val FontStyle: shared.datatypes.FontStyle.type = shared.datatypes.FontStyle
-
-type FontWeight = shared.datatypes.FontWeight
-val FontWeight: shared.datatypes.FontWeight.type = shared.datatypes.FontWeight
-
-type TextStroke = shared.datatypes.TextStroke
-val TextStroke: shared.datatypes.TextStroke.type = shared.datatypes.TextStroke
-
-type Pixels = shared.datatypes.Pixels
-val Pixels: shared.datatypes.Pixels.type = shared.datatypes.Pixels
-
-type TextAlign = shared.datatypes.TextAlign
-val TextAlign: shared.datatypes.TextAlign.type = shared.datatypes.TextAlign
-
-type TextBaseLine = shared.datatypes.TextBaseLine
-val TextBaseLine: shared.datatypes.TextBaseLine.type = shared.datatypes.TextBaseLine
-
-type TextDirection = shared.datatypes.TextDirection
-val TextDirection: shared.datatypes.TextDirection.type = shared.datatypes.TextDirection
 
 // Clones
 type Cloneable = shared.scenegraph.Cloneable

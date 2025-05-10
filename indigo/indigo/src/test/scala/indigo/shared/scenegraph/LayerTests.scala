@@ -1,7 +1,6 @@
 package indigo.shared.scenegraph
 
 import indigo.shared.collections.Batch
-import indigo.shared.datatypes.BindingKey
 import indigo.shared.datatypes.RGBA
 import indigo.shared.materials.BlendMaterial
 
@@ -80,6 +79,69 @@ class LayerTests extends munit.FunSuite {
       Layer.Content.empty :: Layer.Stack(Layer.Content.empty),
       Layer.Stack(Layer.Content.empty, Layer.Content.empty)
     )
+  }
+
+  test("modify - Content layer") {
+    val l = Layer.Content.empty.withMagnification(1)
+
+    val actual   = l.modify { case l: Layer.Content => l.withMagnification(2) }
+    val expected = Layer.Content.empty.withMagnification(2)
+
+    assertEquals(actual, expected)
+  }
+
+  test("modify - Stack layer") {
+    val l = Layer.Stack(Layer.Content.empty, Layer.Content.empty, Layer.Content.empty)
+
+    val actual   = l.modify { case ll: Layer.Stack => Layer.Stack(ll.layers.take(1)) }
+    val expected = Layer.Stack(Layer.Content.empty)
+
+    assertEquals(actual, expected)
+  }
+
+  test("modify - perform a deep modification") {
+    val l = Layer.Stack(
+      Layer.Stack(
+        Layer.Content.empty.withMagnification(1),
+        Layer.Content.empty.withMagnification(1),
+        Layer.Content.empty.withMagnification(1)
+      ),
+      Layer.Content.empty.withMagnification(1),
+      Layer.Content.empty.withMagnification(1),
+      Layer.Content.empty.withMagnification(1)
+    )
+
+    val actual = l.modify { case l: Layer.Content => l.withMagnification(2) }
+    val expected = Layer.Stack(
+      Layer.Stack(
+        Layer.Content.empty.withMagnification(2),
+        Layer.Content.empty.withMagnification(2),
+        Layer.Content.empty.withMagnification(2)
+      ),
+      Layer.Content.empty.withMagnification(2),
+      Layer.Content.empty.withMagnification(2),
+      Layer.Content.empty.withMagnification(2)
+    )
+
+    assertEquals(actual, expected)
+  }
+
+  test("Layer.Stack cons") {
+    val l = Layer.Stack(Layer.Content.empty, Layer.Content.empty, Layer.Content.empty)
+
+    val actual = Layer.Content.empty.withMagnification(2) :: l
+
+    assertEquals(actual.layers.length, 4)
+
+    actual.layers.head match
+      case Layer.Content(nodes, lights, magnification, visible, blending, cloneBlanks, camera) =>
+        assertEquals(
+          magnification,
+          Some(2)
+        )
+
+      case _ =>
+        fail("match failed")
   }
 
 }

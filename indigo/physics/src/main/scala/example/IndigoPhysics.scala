@@ -23,7 +23,12 @@ object IndigoPhysics extends IndigoGame[Unit, Unit, Model, Unit]:
     Outcome(
       BootResult
         .noData(Config.config)
-        .withSubSystems(FPSCounter(Point(10)))
+        .withSubSystems(
+          FPSCounter(PixelatedFont.fontKey, Assets.assets.generated.PixelatedFont)
+            .moveTo(Point(10))
+        )
+        .withAssets(Assets.assets.generated.assetSet)
+        .withFonts(PixelatedFont.fontInfo)
     )
 
   def initialModel(startupData: Unit): Outcome[Model] =
@@ -76,7 +81,7 @@ object Model:
       BoxesAndBallsScene.world(dice)
     )
 
-enum MyTag:
+enum MyTag derives CanEqual:
   case Platform
   case StaticCircle
   case Ball

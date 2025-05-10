@@ -2,7 +2,6 @@ package indigo.platform
 
 import indigo.platform.assets.AssetCollection
 import indigo.platform.assets.AtlasId
-import indigo.platform.assets.DynamicText
 import indigo.platform.assets.ImageRef
 import indigo.platform.assets.TextureAtlas
 import indigo.platform.assets.TextureAtlasFunctions
@@ -28,20 +27,20 @@ import indigo.shared.shader.RawShaderCode
 import org.scalajs.dom
 import org.scalajs.dom.Element
 import org.scalajs.dom.html.Canvas
-import org.scalajs.macrotaskexecutor.MacrotaskExecutor.Implicits._
+import org.scalajs.macrotaskexecutor.MacrotaskExecutor.Implicits.*
 
+import scala.annotation.nowarn
 import scala.util.Failure
 import scala.util.Success
 
 class Platform(
     parentElement: Element,
     gameConfig: GameConfig,
-    globalEventStream: GlobalEventStream,
-    dynamicText: DynamicText
+    globalEventStream: GlobalEventStream
 ) extends PlatformFullScreen {
 
   val rendererInit: RendererInitialiser =
-    new RendererInitialiser(gameConfig.advanced.renderingTechnology, globalEventStream, dynamicText)
+    new RendererInitialiser(gameConfig.advanced.renderingTechnology, globalEventStream)
 
   @SuppressWarnings(Array("scalafix:DisableSyntax.null", "scalafix:DisableSyntax.var"))
   private var _canvas: Canvas = null
@@ -64,10 +63,12 @@ class Platform(
       _ = _canvas = canvas
     } yield (renderer, assetMapping)
 
+  @nowarn("msg=discarded")
   def tick(loop: Double => Unit): Unit =
     if _running then dom.window.requestAnimationFrame(loop)
     ()
 
+  @nowarn("msg=discarded")
   def delay(amount: Double, thunk: () => Unit): Unit =
     dom.window.setTimeout(thunk, amount)
 

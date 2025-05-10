@@ -1,8 +1,5 @@
 package indigo.shared.scenegraph
 
-import indigo.shared.BoundaryLocator
-import indigo.shared.collections.Batch
-import indigo.shared.datatypes.Depth
 import indigo.shared.datatypes.Flip
 import indigo.shared.datatypes.Point
 import indigo.shared.datatypes.Radians
@@ -11,12 +8,10 @@ import indigo.shared.datatypes.Size
 import indigo.shared.datatypes.Vector2
 import indigo.shared.events.GlobalEvent
 import indigo.shared.materials.Material
-import indigo.shared.materials.ShaderData
-import indigo.shared.shader.ShaderPrimitive.float
+import indigo.shared.shader.ShaderData
 import indigo.shared.shader.StandardShaders
-import indigo.shared.shader.Uniform
+import indigo.shared.shader.ToUniformBlock
 import indigo.shared.shader.UniformBlock
-import indigo.shared.shader.UniformBlockName
 import indigo.shared.time.FPS
 import indigo.shared.time.Seconds
 
@@ -30,13 +25,11 @@ final case class Clip[M <: Material](
     position: Point,
     rotation: Radians,
     scale: Vector2,
-    depth: Depth,
     ref: Point,
     flip: Flip
 ) extends EntityNode[Clip[M]]
     with Cloneable
-    with SpatialModifiers[Clip[M]]
-    derives CanEqual:
+    with SpatialModifiers[Clip[M]] derives CanEqual:
 
   export sheet.frameCount
   export sheet.frameDuration
@@ -138,9 +131,6 @@ final case class Clip[M <: Material](
   def transformBy(positionDiff: Point, rotationDiff: Radians, scaleDiff: Vector2): Clip[M] =
     transformTo(position + positionDiff, rotation + rotationDiff, scale * scaleDiff)
 
-  def withDepth(newDepth: Depth): Clip[M] =
-    this.copy(depth = newDepth)
-
   def flipHorizontal(isFlipped: Boolean): Clip[M] =
     this.copy(flip = flip.withHorizontalFlip(isFlipped))
   def flipVertical(isFlipped: Boolean): Clip[M] =
@@ -157,19 +147,16 @@ final case class Clip[M <: Material](
     val data = material.toShaderData
     data
       .withShaderId(StandardShaders.shaderIdToClipShaderId(data.shaderId))
-      .addUniformBlock(
-        UniformBlock(
-          UniformBlockName("IndigoClipData"),
-          Batch(
-            Uniform("CLIP_SHEET_FRAME_COUNT")    -> float(sheet.frameCount),
-            Uniform("CLIP_SHEET_FRAME_DURATION") -> float.fromSeconds(sheet.frameDuration),
-            Uniform("CLIP_SHEET_WRAP_AT")        -> float(sheet.wrapAt),
-            Uniform("CLIP_SHEET_ARRANGEMENT")    -> float(sheet.arrangement.toInt),
-            Uniform("CLIP_SHEET_START_OFFSET")   -> float(sheet.startOffset),
-            Uniform("CLIP_PLAY_DIRECTION")       -> float(playMode.direction.toInt),
-            Uniform("CLIP_PLAYMODE_START_TIME")  -> float.fromSeconds(playMode.giveStartTime),
-            Uniform("CLIP_PLAYMODE_TIMES")       -> float(playMode.giveTimes)
-          )
+      .addUniformData(
+        Clip.IndigoClipData(
+          sheet.frameCount,
+          sheet.frameDuration,
+          sheet.wrapAt,
+          sheet.arrangement.toInt,
+          sheet.startOffset,
+          playMode.direction.toInt,
+          playMode.giveStartTime,
+          playMode.giveTimes
         )
       )
 
@@ -208,7 +195,6 @@ final case class Clip[M <: Material](
       position = position,
       rotation = rotation,
       scale = scale,
-      depth = depth,
       ref = ref,
       flip = flip,
       crop = Rectangle(framePositon * size.toPoint, size),
@@ -228,6 +214,17 @@ final case class Clip[M <: Material](
 
 object Clip:
 
+  final case class IndigoClipData(
+      CLIP_SHEET_FRAME_COUNT: Int,
+      CLIP_SHEET_FRAME_DURATION: Seconds,
+      CLIP_SHEET_WRAP_AT: Int,
+      CLIP_SHEET_ARRANGEMENT: Int,
+      CLIP_SHEET_START_OFFSET: Int,
+      CLIP_PLAY_DIRECTION: Int,
+      CLIP_PLAYMODE_START_TIME: Seconds,
+      CLIP_PLAYMODE_TIMES: Int
+  ) derives ToUniformBlock
+
   def apply[M <: Material](
       width: Int,
       height: Int,
@@ -245,7 +242,6 @@ object Clip:
       position = Point.zero,
       rotation = Radians.zero,
       scale = Vector2.one,
-      depth = Depth.zero,
       ref = Point.zero,
       flip = Flip.default
     )
@@ -266,7 +262,6 @@ object Clip:
       position = Point.zero,
       rotation = Radians.zero,
       scale = Vector2.one,
-      depth = Depth.zero,
       ref = Point.zero,
       flip = Flip.default
     )
@@ -290,7 +285,6 @@ object Clip:
       position = Point(x, y),
       rotation = Radians.zero,
       scale = Vector2.one,
-      depth = Depth.zero,
       ref = Point.zero,
       flip = Flip.default
     )
@@ -313,7 +307,6 @@ object Clip:
       position = Point(x, y),
       rotation = Radians.zero,
       scale = Vector2.one,
-      depth = Depth.zero,
       ref = Point.zero,
       flip = Flip.default
     )
@@ -334,7 +327,6 @@ object Clip:
       position = Point.zero,
       rotation = Radians.zero,
       scale = Vector2.one,
-      depth = Depth.zero,
       ref = Point.zero,
       flip = Flip.default
     )
@@ -354,7 +346,6 @@ object Clip:
       position = Point.zero,
       rotation = Radians.zero,
       scale = Vector2.one,
-      depth = Depth.zero,
       ref = Point.zero,
       flip = Flip.default
     )
@@ -376,7 +367,6 @@ object Clip:
       position = position,
       rotation = Radians.zero,
       scale = Vector2.one,
-      depth = Depth.zero,
       ref = Point.zero,
       flip = Flip.default
     )
@@ -397,7 +387,6 @@ object Clip:
       position = position,
       rotation = Radians.zero,
       scale = Vector2.one,
-      depth = Depth.zero,
       ref = Point.zero,
       flip = Flip.default
     )

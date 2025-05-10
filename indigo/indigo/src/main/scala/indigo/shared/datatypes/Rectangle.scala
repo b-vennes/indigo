@@ -28,9 +28,6 @@ final case class Rectangle(position: Point, size: Size) derives CanEqual:
   lazy val center: Point      = Point(horizontalCenter, verticalCenter)
   lazy val halfSize: Size     = (size / 2).abs
 
-  lazy private val halfWidth: Double  = (size.width * 0.5).abs
-  lazy private val halfHeight: Double = (size.height * 0.5).abs
-
   lazy val corners: Batch[Point] =
     Batch(topLeft, topRight, bottomRight, bottomLeft)
 
@@ -95,6 +92,46 @@ final case class Rectangle(position: Point, size: Size) derives CanEqual:
     this.copy(position = point)
   def moveTo(x: Int, y: Int): Rectangle =
     moveTo(Point(x, y))
+
+  /** Resize the rectangle to the given size or the current size, whichever is smaller.
+    */
+  def min(value: Size): Rectangle =
+    this.copy(size = size.min(value))
+
+  /** Resize the rectangle to the given size or the current size, whichever is smaller.
+    */
+  def min(width: Int, height: Int): Rectangle =
+    min(Size(width, height))
+
+  /** Ensure the rectangle is at least, the given size.
+    */
+  def minSize(min: Size): Rectangle =
+    max(min)
+
+  /** Ensure the rectangle is at least, the given size.
+    */
+  def minSize(width: Int, height: Int): Rectangle =
+    minSize(Size(width, height))
+
+  /** Resize the rectangle to the given size or the current size, whichever is larger.
+    */
+  def max(value: Size): Rectangle =
+    this.copy(size = size.max(value))
+
+  /** Resize the rectangle to the given size or the current size, whichever is larger.
+    */
+  def max(width: Int, height: Int): Rectangle =
+    max(Size(width, height))
+
+  /** Ensure the rectangle is at most, the given size.
+    */
+  def maxSize(max: Size): Rectangle =
+    min(max)
+
+  /** Ensure the rectangle is at most, the given size.
+    */
+  def maxSize(width: Int, height: Int): Rectangle =
+    maxSize(Size(width, height))
 
   def resize(newSize: Size): Rectangle =
     this.copy(size = newSize)

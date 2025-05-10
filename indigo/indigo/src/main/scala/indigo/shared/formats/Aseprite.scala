@@ -10,7 +10,6 @@ import indigo.shared.assets.AssetName
 import indigo.shared.collections.Batch
 import indigo.shared.collections.NonEmptyList
 import indigo.shared.datatypes.BindingKey
-import indigo.shared.datatypes.Depth
 import indigo.shared.datatypes.Flip
 import indigo.shared.datatypes.Point
 import indigo.shared.datatypes.Radians
@@ -18,7 +17,6 @@ import indigo.shared.datatypes.Rectangle
 import indigo.shared.datatypes.Size
 import indigo.shared.datatypes.Vector2
 import indigo.shared.dice.Dice
-import indigo.shared.events.GlobalEvent
 import indigo.shared.materials.Material
 import indigo.shared.scenegraph.Clip
 import indigo.shared.scenegraph.ClipPlayMode
@@ -26,7 +24,6 @@ import indigo.shared.scenegraph.ClipSheet
 import indigo.shared.scenegraph.ClipSheetArrangement
 import indigo.shared.scenegraph.Sprite
 import indigo.shared.time.Millis
-import indigo.shared.time.Seconds
 
 final case class Aseprite(frames: List[AsepriteFrame], meta: AsepriteMeta) derives CanEqual:
   def toSpriteAndAnimations(dice: Dice, assetName: AssetName): Option[SpriteAndAnimations] =
@@ -93,7 +90,6 @@ object Aseprite:
               position = Point(0, 0),
               rotation = Radians.zero,
               scale = Vector2.one,
-              depth = Depth.zero,
               ref = Point(0, 0),
               flip = Flip.default
             ),
@@ -117,7 +113,6 @@ object Aseprite:
               position = Point.zero,
               rotation = Radians.zero,
               scale = Vector2.one,
-              depth = Depth.zero,
               ref = Point.zero,
               flip = Flip.default
             )

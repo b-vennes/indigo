@@ -1,12 +1,14 @@
 package indigo.shared.shader.library
 
-import indigo.shared.shader.library.IndigoUV.*
 import ultraviolet.syntax.*
+
+import scala.annotation.nowarn
 
 object ImageEffects:
 
   trait Env extends Lighting.LightEnv {
     val ALPHA_SATURATION_OVERLAYTYPE_FILLTYPE: highp[vec4] = vec4(0.0f)
+    val NINE_SLICE_CENTER: highp[vec4]                     = vec4(0.0f)
     val TINT: vec4                                         = vec4(0.0f)
     val GRADIENT_FROM_TO: vec4                             = vec4(0.0f)
     val GRADIENT_FROM_COLOR: vec4                          = vec4(0.0f)
@@ -17,12 +19,14 @@ object ImageEffects:
 
   case class IndigoImageEffectsData(
       ALPHA_SATURATION_OVERLAYTYPE_FILLTYPE: highp[vec4],
+      NINE_SLICE_CENTER: highp[vec4],
       TINT: vec4,
       GRADIENT_FROM_TO: vec4,
       GRADIENT_FROM_COLOR: vec4,
       GRADIENT_TO_COLOR: vec4
   )
 
+  @nowarn("msg=unused")
   inline def fragment =
     Shader[Env] { env =>
       import ImageEffectFunctions.*
@@ -43,7 +47,7 @@ object ImageEffects:
           calculateRadialGradientOverlay
         val _calculateSaturation: (vec4, Float) => vec4 =
           calculateSaturation
-        val _tileAndStretchChannel: (Int, vec4, sampler2D.type, vec2, vec2, vec2, vec2, vec2) => vec4 =
+        val _tileAndStretchChannel: (Int, vec4, sampler2D.type, vec2, vec2, vec2, vec2, vec2, vec4) => vec4 =
           tileAndStretchChannel
 
         // 0 = normal 1 = stretch 2 = tile
@@ -58,7 +62,8 @@ object ImageEffects:
           env.CHANNEL_0_SIZE,
           env.UV,
           env.SIZE,
-          env.TEXTURE_SIZE
+          env.TEXTURE_SIZE,
+          env.NINE_SLICE_CENTER
         )
         env.CHANNEL_1 = _tileAndStretchChannel(
           fillType,
@@ -68,7 +73,8 @@ object ImageEffects:
           env.CHANNEL_0_SIZE,
           env.UV,
           env.SIZE,
-          env.TEXTURE_SIZE
+          env.TEXTURE_SIZE,
+          env.NINE_SLICE_CENTER
         )
         env.CHANNEL_2 = _tileAndStretchChannel(
           fillType,
@@ -78,7 +84,8 @@ object ImageEffects:
           env.CHANNEL_0_SIZE,
           env.UV,
           env.SIZE,
-          env.TEXTURE_SIZE
+          env.TEXTURE_SIZE,
+          env.NINE_SLICE_CENTER
         )
         env.CHANNEL_3 = _tileAndStretchChannel(
           fillType,
@@ -88,7 +95,8 @@ object ImageEffects:
           env.CHANNEL_0_SIZE,
           env.UV,
           env.SIZE,
-          env.TEXTURE_SIZE
+          env.TEXTURE_SIZE,
+          env.NINE_SLICE_CENTER
         )
 
         val alpha: Float    = env.ALPHA_SATURATION_OVERLAYTYPE_FILLTYPE.x

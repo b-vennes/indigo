@@ -4,7 +4,7 @@ import indigo.gameengine.GameEngine
 import org.scalajs.dom.Element
 import org.scalajs.dom.document
 
-import scala.scalajs.js.annotation._
+import scala.scalajs.js.annotation.*
 
 trait GameLauncher[StartUpData, Model, ViewModel]:
 
@@ -21,11 +21,9 @@ trait GameLauncher[StartUpData, Model, ViewModel]:
       case None =>
         throw new Exception(s"Missing Element! Could not find an element with id '$containerId' on the page.")
 
-  @SuppressWarnings(Array("scalafix:DisableSyntax.null"))
   @JSExport
   def halt(): Unit =
     game.kill()
-    game = null
     ()
 
   @JSExport

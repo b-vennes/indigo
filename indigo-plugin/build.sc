@@ -9,28 +9,26 @@ import mill.scalalib.scalafmt._
 import coursier.maven.MavenRepository
 import publish._
 
-import $ivy.`io.github.davidgregory084::mill-tpolecat::0.3.5`
-import io.github.davidgregory084.TpolecatModule
-
 object `indigo-plugin` extends Cross[IndigoPluginModule]("2.12", "2.13")
 
-trait IndigoPluginModule extends CrossScalaModule with PublishModule with ScalafmtModule with TpolecatModule {
-  def indigoVersion = T.input(IndigoVersion.getVersion)
+trait IndigoPluginModule extends CrossScalaModule with PublishModule with ScalafmtModule {
+
+  def indigoVersion = T.input(IndigoVersion.getVersion(T.workspace))
 
   def scalaVersion =
     crossScalaVersion match {
-      case "2.12" => "2.12.17"
-      case "2.13" => "2.13.10"
-      case _      => "2.13.10"
+      case "2.12" => "2.12.20"
+      case "2.13" => "2.13.16"
+      case _      => "2.13.16"
     }
 
   def artifactName = "indigo-plugin"
 
   def ivyDeps =
     Agg(
-      ivy"com.lihaoyi::os-lib:0.8.0",
-      ivy"io.circe::circe-core:0.14.1",
-      ivy"io.circe::circe-parser:0.14.1"
+      ivy"com.lihaoyi::os-lib:0.11.3",
+      ivy"io.circe::circe-core:0.14.10",
+      ivy"io.circe::circe-parser:0.14.10"
     )
 
   def repositoriesTask = T.task {
@@ -42,7 +40,7 @@ trait IndigoPluginModule extends CrossScalaModule with PublishModule with Scalaf
   object test extends ScalaTests {
     def ivyDeps =
       Agg(
-        ivy"org.scalameta::munit:0.7.29"
+        ivy"org.scalameta::munit:1.0.4"
       )
 
     def testFramework = "munit.Framework"
@@ -65,8 +63,8 @@ trait IndigoPluginModule extends CrossScalaModule with PublishModule with Scalaf
 }
 
 object IndigoVersion {
-  def getVersion: String = {
-    def rec(path: String, levels: Int, version: Option[String]): String = {
+  def getVersion(workspaceDir: os.Path): String = {
+    def rec(wd: os.Path, file: String, levels: Int, version: Option[String]): String = {
       val msg = "ERROR: Couldn't find indigo version."
       version match {
         case Some(v) =>
@@ -75,11 +73,11 @@ object IndigoVersion {
 
         case None if levels < 3 =>
           try {
-            val v = scala.io.Source.fromFile(path).getLines().toList.head
-            rec(path, levels, Some(v))
+            val v = os.read.lines(wd / file).head
+            rec(wd, file, levels, Some(v))
           } catch {
             case _: Throwable =>
-              rec("../" + path, levels + 1, None)
+              rec(wd / os.RelPath.up, file, levels + 1, None)
           }
 
         case None =>
@@ -88,6 +86,6 @@ object IndigoVersion {
       }
     }
 
-    rec(".indigo-version", 0, None)
+    rec(workspaceDir, ".indigo-version", 0, None)
   }
 }

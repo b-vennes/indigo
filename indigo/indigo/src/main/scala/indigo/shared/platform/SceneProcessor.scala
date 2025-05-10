@@ -6,34 +6,33 @@ import indigo.shared.FontRegister
 import indigo.shared.QuickCache
 import indigo.shared.collections.Batch
 import indigo.shared.config.RenderingTechnology
-import indigo.shared.datatypes.Depth
 import indigo.shared.datatypes.RGBA
 import indigo.shared.display.DisplayLayer
 import indigo.shared.display.DisplayObject
 import indigo.shared.display.DisplayObjectUniformData
 import indigo.shared.events.GlobalEvent
 import indigo.shared.materials.BlendMaterial
-import indigo.shared.materials.BlendShaderData
-import indigo.shared.platform.AssetMapping
-import indigo.shared.platform.ProcessedSceneData
 import indigo.shared.scenegraph.AmbientLight
 import indigo.shared.scenegraph.Blending
 import indigo.shared.scenegraph.CloneBlank
-import indigo.shared.scenegraph.CloneId
 import indigo.shared.scenegraph.DirectionLight
 import indigo.shared.scenegraph.EntityNode
 import indigo.shared.scenegraph.Falloff
 import indigo.shared.scenegraph.Graphic
+import indigo.shared.scenegraph.Layer
 import indigo.shared.scenegraph.LayerEntry
+import indigo.shared.scenegraph.LayerKey
 import indigo.shared.scenegraph.Light
 import indigo.shared.scenegraph.PointLight
 import indigo.shared.scenegraph.SceneUpdateFragment
 import indigo.shared.scenegraph.Shape
 import indigo.shared.scenegraph.SpotLight
 import indigo.shared.scenegraph.Sprite
+import indigo.shared.shader.ShaderData
 import indigo.shared.time.GameTime
 
-import scala.scalajs.js.JSConverters._
+import scala.annotation.tailrec
+import scala.scalajs.js.JSConverters.*
 
 final class SceneProcessor(
     boundaryLocator: BoundaryLocator,
@@ -111,21 +110,18 @@ final class SceneProcessor(
         maybeDO match
           case None => acc
           case Some(displayObject) =>
-            acc.put(blank.id.toString, displayObject)
+            acc.update(blank.id.toString, displayObject)
             acc
       }
 
     val displayLayers: scalajs.js.Array[(DisplayLayer, scalajs.js.Array[(String, DisplayObject)])] =
-      scene.layers
-        .flatMap(l =>
-          l.toBatch
-            .filter(content => content.visible.getOrElse(true))
+      SceneProcessor
+        .compactLayers(scene.layers)
+        .flatMap((maybeLayerKey, contentLayers) =>
+          contentLayers
             .map(
               (
-                l match {
-                  case LayerEntry.Tagged(tag, _) => Some(tag)
-                  case _                         => None
-                },
+                maybeLayerKey,
                 _
               )
             )
@@ -154,7 +150,6 @@ final class SceneProcessor(
             SceneProcessor.makeLightsData((scene.lights ++ l._2.lights).toJSArray),
             blending.clearColor.getOrElse(RGBA.Zero),
             l._2.magnification,
-            l._2.depth.getOrElse(Depth(i)),
             blending.entity,
             blending.layer,
             shaderData.shaderId,
@@ -164,7 +159,6 @@ final class SceneProcessor(
 
           (layer, conversionResults._2)
         }
-        .sortBy(_._1.depth.toInt)
 
     val sceneBlend = scene.blendMaterial.getOrElse(BlendMaterial.Normal).toShaderData
 
@@ -326,7 +320,7 @@ object SceneProcessor {
     }
 
   def mergeShaderToUniformData(
-      shaderData: BlendShaderData
+      shaderData: ShaderData
   )(using QuickCache[scalajs.js.Array[Float]]): scalajs.js.Array[DisplayObjectUniformData] =
     shaderData.uniformBlocks.toJSArray.map { ub =>
       DisplayObjectUniformData(
@@ -335,6 +329,69 @@ object SceneProcessor {
         data = DisplayObjectConversions.packUBO(ub.uniforms, ub.uniformHash, false)
       )
     }
+
+  /** Compact layers by squashing layers that have the same properties.
+    */
+  def compactLayers(layerEntries: Batch[LayerEntry]): Batch[(Option[LayerKey], Batch[Layer.Content])] =
+    layerEntries.map {
+      case LayerEntry.NoKey(layer: Layer.Content) =>
+        val ls = if layer.visible.getOrElse(true) then Batch(layer) else Batch.empty
+
+        (None, ls)
+
+      case LayerEntry.NoKey(stack: Layer.Stack) =>
+        val ls = compactContentLayers(stack.toBatch)
+
+        (None, ls)
+
+      case LayerEntry.Keyed(key, layer: Layer.Content) =>
+        val ls = if layer.visible.getOrElse(true) then Batch(layer) else Batch.empty
+
+        (Option(key), ls)
+
+      case LayerEntry.Keyed(key, stack: Layer.Stack) =>
+        val ls = compactContentLayers(stack.toBatch)
+
+        (Option(key), ls)
+    }
+
+  def compactContentLayers(contentLayers: Batch[Layer.Content]): Batch[Layer.Content] =
+    @tailrec
+    def rec(remaining: Batch[Layer.Content], current: Layer.Content, acc: Batch[Layer.Content]): Batch[Layer.Content] =
+      if remaining.length == 0 then acc :+ current
+      else
+        val head = remaining.head
+        val tail = remaining.tail
+
+        if head.visible.exists(_ == false) then rec(tail, current, acc)
+        else if canCompactLayers(current, head) then
+          rec(
+            tail,
+            current.copy(nodes = current.nodes ++ head.nodes, cloneBlanks = current.cloneBlanks ++ head.cloneBlanks),
+            acc
+          )
+        else rec(tail, head, acc :+ current)
+
+    val contentLayersFirstIsVisible =
+      contentLayers.dropWhile(l => l.visible.exists(_ == false))
+
+    if contentLayersFirstIsVisible.length < 2 then contentLayersFirstIsVisible
+    else
+      val head = contentLayersFirstIsVisible.head
+      val tail = contentLayersFirstIsVisible.tail
+
+      rec(tail, head, Batch.empty)
+
+  /** The rule is that if the two layers have all the same properties, ignoring the scene nodes and clone blanks, then
+    * we can compact them.
+    */
+  def canCompactLayers(a: Layer.Content, b: Layer.Content): Boolean =
+    a.lights == b.lights &&
+      a.magnification == b.magnification &&
+      a.visible == b.visible &&
+      a.blending == b.blending &&
+      a.camera == b.camera
+
 }
 
 final case class LightData(

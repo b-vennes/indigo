@@ -1,6 +1,9 @@
 import indigo.*
+import indigo.syntax.shaders.*
+import ultraviolet.syntax.*
 
-import scala.scalajs.js.annotation._
+import scala.annotation.nowarn
+import scala.scalajs.js.annotation.*
 
 @JSExportTopLevel("IndigoGame")
 object ShaderGame extends IndigoShader:
@@ -12,9 +15,35 @@ object ShaderGame extends IndigoShader:
   val channel2: Option[AssetPath] = None
   val channel3: Option[AssetPath] = None
 
-  val shader: Shader =
-    // ShowImage.shader
-    SeascapeShader.shader
+  val uniformBlocks: Batch[UniformBlock] =
+    Batch(CustomData(RGBA.Magenta.toUVVec4))
+
+  val shader: ShaderProgram =
+    ShaderWithData.shader
+// ShowImage.shader
+// SeascapeShader.shader
+
+final case class CustomData(CUSTOM_COLOR: vec4) extends FragmentEnvReference derives ToUniformBlock
+object CustomData:
+  val reference =
+    CustomData(vec4(0.0f))
+
+object ShaderWithData:
+
+  val shader: UltravioletShader =
+    UltravioletShader.entityFragment(
+      ShaderId("shader with data"),
+      EntityShader.fragment[CustomData](shaderWithData, CustomData.reference)
+    )
+
+  @nowarn("msg=unused")
+  inline def shaderWithData: Shader[CustomData, Unit] =
+    Shader[CustomData] { env =>
+      ubo[CustomData]
+
+      def fragment(color: vec4): vec4 =
+        env.CUSTOM_COLOR
+    }
 
 object ShowImage:
 
@@ -24,8 +53,7 @@ object ShowImage:
       EntityShader.fragment[FragmentEnv](showImage, FragmentEnv.reference)
     )
 
-  import ultraviolet.syntax.*
-
+  @nowarn("msg=unused")
   inline def showImage: Shader[FragmentEnv, Unit] =
     Shader[FragmentEnv] { env =>
       def fragment(color: vec4): vec4 =
@@ -49,16 +77,15 @@ object SeascapeShader:
 
 object VoronoiShader:
 
-  val shader: Shader =
+  val shader: ShaderProgram =
     UltravioletShader.entityFragment(
       ShaderId("my shader"),
       EntityShader.fragment[FragmentEnv](voronoi, FragmentEnv.reference)
     )
 
-  import ultraviolet.syntax.*
-
   // Ported from: https://www.youtube.com/watch?v=l-07BXzNdPw&feature=youtu.be
   @SuppressWarnings(Array("scalafix:DisableSyntax.var"))
+  @nowarn("msg=unused")
   inline def voronoi: Shader[FragmentEnv, Unit] =
     Shader[FragmentEnv] { env =>
 

@@ -2,6 +2,7 @@ package indigo.shared.materials
 
 import indigo.shared.assets.AssetName
 import indigo.shared.collections.Batch
+import indigo.shared.shader.ShaderData
 import indigo.shared.shader.ShaderId
 import indigo.shared.shader.ShaderPrimitive.vec2
 import indigo.shared.shader.Uniform
@@ -24,8 +25,7 @@ object LightingModel {
       emissive: Option[Texture],
       normal: Option[Texture],
       roughness: Option[Texture]
-  ) extends LightingModel
-      derives CanEqual {
+  ) extends LightingModel derives CanEqual {
 
     def enableLighting: LightingModel = this
     def disableLighting: Unlit.type   = Unlit

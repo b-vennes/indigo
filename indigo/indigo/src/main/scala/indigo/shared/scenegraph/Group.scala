@@ -1,8 +1,7 @@
 package indigo.shared.scenegraph
 
-import indigo.shared.BoundaryLocator
 import indigo.shared.collections.Batch
-import indigo.shared.datatypes._
+import indigo.shared.datatypes.*
 import indigo.shared.events.GlobalEvent
 
 /** Used to group elements to allow them to be manipulated as a collection.
@@ -14,18 +13,13 @@ final case class Group(
     position: Point,
     rotation: Radians,
     scale: Vector2,
-    depth: Depth,
     ref: Point,
     flip: Flip
 ) extends DependentNode[Group]
-    with SpatialModifiers[Group]
-    derives CanEqual:
+    with SpatialModifiers[Group] derives CanEqual:
 
   lazy val x: Int = position.x
   lazy val y: Int = position.y
-
-  def withDepth(newDepth: Depth): Group =
-    this.copy(depth = newDepth)
 
   def withRef(newRef: Point): Group =
     this.copy(ref = newRef)
@@ -98,7 +92,6 @@ object Group:
       Point.zero,
       Radians.zero,
       Vector2.one,
-      Depth.zero,
       Point.zero,
       Flip.default
     )
@@ -111,7 +104,6 @@ object Group:
       Point.zero,
       Radians.zero,
       Vector2.one,
-      Depth.zero,
       Point.zero,
       Flip.default
     )

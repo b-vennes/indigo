@@ -3,14 +3,12 @@ package indigoextras.subsystems
 import indigo.shared.Outcome
 import indigo.shared.collections.Batch
 import indigo.shared.collections.NonEmptyList
-import indigo.shared.datatypes.BindingKey
 import indigo.shared.datatypes.Point
 import indigo.shared.dice.Dice
 import indigo.shared.events.FrameTick
 import indigo.shared.events.GlobalEvent
 import indigo.shared.events.SubSystemEvent
-import indigo.shared.scenegraph.SceneNode
-import indigo.shared.scenegraph._
+import indigo.shared.scenegraph.*
 import indigo.shared.subsystems.SubSystem
 import indigo.shared.subsystems.SubSystemContext
 import indigo.shared.subsystems.SubSystemId
@@ -18,15 +16,14 @@ import indigo.shared.temporal.Signal
 import indigo.shared.temporal.SignalReader
 import indigo.shared.time.GameTime
 import indigo.shared.time.Seconds
-import indigoextras.subsystems.AutomataEvent._
+import indigoextras.subsystems.AutomataEvent.*
 
 import scalajs.js
-import scalajs.js.JSConverters.*
 
 final case class Automata[Model](
     poolKey: AutomataPoolKey,
     automaton: Automaton,
-    layerKey: Option[BindingKey],
+    layerKey: Option[LayerKey],
     maxPoolSize: Option[Int]
 ) extends SubSystem[Model]:
   type EventType      = AutomataEvent
@@ -136,7 +133,7 @@ object Automata:
   def apply[Model](poolKey: AutomataPoolKey, automaton: Automaton): Automata[Model] =
     Automata(poolKey, automaton, None, None)
 
-  def apply[Model](poolKey: AutomataPoolKey, automaton: Automaton, layerKey: BindingKey): Automata[Model] =
+  def apply[Model](poolKey: AutomataPoolKey, automaton: Automaton, layerKey: LayerKey): Automata[Model] =
     Automata(poolKey, automaton, Some(layerKey), None)
 
   def renderNoLayer(pool: js.Array[SpawnedAutomaton], gameTime: GameTime): AutomatonUpdate =

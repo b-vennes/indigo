@@ -1,7 +1,6 @@
 package indigo.shared.platform
 
 import indigo.platform.assets.AtlasId
-import indigo.platform.assets.DynamicText
 import indigo.shared.AnimationsRegister
 import indigo.shared.BoundaryLocator
 import indigo.shared.FontRegister
@@ -9,42 +8,33 @@ import indigo.shared.QuickCache
 import indigo.shared.assets.AssetName
 import indigo.shared.collections.Batch
 import indigo.shared.config.RenderingTechnology
-import indigo.shared.datatypes.Depth
-import indigo.shared.datatypes.Point
-import indigo.shared.datatypes.Radians
 import indigo.shared.datatypes.Rectangle
 import indigo.shared.datatypes.Vector2
-import indigo.shared.datatypes.Vector3
-import indigo.shared.datatypes.mutable.CheapMatrix4
 import indigo.shared.display.DisplayCloneBatch
 import indigo.shared.display.DisplayCloneTiles
 import indigo.shared.display.DisplayGroup
 import indigo.shared.display.DisplayMutants
 import indigo.shared.display.DisplayObject
-import indigo.shared.display.DisplayText
 import indigo.shared.display.DisplayTextLetters
 import indigo.shared.events.GlobalEvent
 import indigo.shared.materials.Material
-import indigo.shared.scenegraph.CloneId
 import indigo.shared.scenegraph.Graphic
-import indigo.shared.scenegraph.Group
-import indigo.shared.scenegraph.RenderNode
 import indigo.shared.scenegraph.SceneNode
 import indigo.shared.shader.Uniform
 import indigo.shared.time.GameTime
 import indigo.shared.time.Seconds
 
-import scala.scalajs.js.JSConverters._
+import scala.scalajs.js.JSConverters.*
 
 @SuppressWarnings(Array("scalafix:DisableSyntax.throw"))
 class DisplayObjectConversionsTests extends munit.FunSuite {
 
   val graphic: Graphic[?] =
-    Graphic(Rectangle(10, 20, 200, 100), 2, Material.Bitmap(AssetName("texture")))
+    Graphic(Rectangle(10, 20, 200, 100), Material.Bitmap(AssetName("texture")))
 
   val animationRegister = new AnimationsRegister
   val fontRegister      = new FontRegister
-  val boundaryLocator   = new BoundaryLocator(animationRegister, fontRegister, new DynamicText)
+  val boundaryLocator   = new BoundaryLocator(animationRegister, fontRegister)
   val texture = new TextureRefAndOffset(AtlasId("texture"), Vector2(100, 100), Vector2.zero, Vector2(200, 100))
   val assetMapping: AssetMapping = new AssetMapping(scalajs.js.Dictionary("texture" -> texture))
 
@@ -70,7 +60,7 @@ class DisplayObjectConversionsTests extends munit.FunSuite {
         RenderingTechnology.WebGL2,
         256,
         scalajs.js.Array[GlobalEvent](),
-        (e: GlobalEvent) => ()
+        (_: GlobalEvent) => ()
       )
       ._1
       .head match {
@@ -82,9 +72,6 @@ class DisplayObjectConversionsTests extends munit.FunSuite {
 
       case _: DisplayMutants =>
         throw new Exception("failed (DisplayMutants)")
-
-      case _: DisplayText =>
-        throw new Exception("failed (DisplayText)")
 
       case _: DisplayTextLetters =>
         throw new Exception("failed (DisplayTextLetters)")
@@ -106,7 +93,6 @@ class DisplayObjectConversionsTests extends munit.FunSuite {
 
     assertEquals(actual.x, 10.0f)
     assertEquals(actual.y, 20.0f)
-    assertEquals(actual.z.toFloat, 2.0f)
     assertEquals(actual.width, 200.0f)
     assertEquals(actual.height, 100.0f)
   }
@@ -195,7 +181,7 @@ class DisplayObjectConversionsTests extends munit.FunSuite {
     // Exact 3 array.
     assertEquals(
       DisplayObjectConversions
-        .packUBO((uniforms :+ Uniform("VERTICES") -> array(3)(vec2(6.0), vec2(7.0), vec2(8.0))), "", true)
+        .packUBO(uniforms :+ Uniform("VERTICES") -> array(3)(vec2(6.0), vec2(7.0), vec2(8.0)), "", true)
         .toList,
       expected.toList ++ List[Float](6, 6, 0, 0, 7, 7, 0, 0, 8, 8, 0, 0)
     )
@@ -203,7 +189,7 @@ class DisplayObjectConversionsTests extends munit.FunSuite {
     // 4 array padded.
     assertEquals(
       DisplayObjectConversions
-        .packUBO((uniforms :+ Uniform("VERTICES") -> array(4)(vec2(6.0), vec2(7.0), vec2(8.0))), "", true)
+        .packUBO(uniforms :+ Uniform("VERTICES") -> array(4)(vec2(6.0), vec2(7.0), vec2(8.0)), "", true)
         .toList,
       expected.toList ++ List[Float](6, 6, 0, 0, 7, 7, 0, 0, 8, 8, 0, 0) ++ List[Float](0, 0, 0, 0)
     )
@@ -211,7 +197,7 @@ class DisplayObjectConversionsTests extends munit.FunSuite {
     // 5 array padded.
     assertEquals(
       DisplayObjectConversions
-        .packUBO((uniforms :+ Uniform("VERTICES") -> array(5)(vec2(6.0), vec2(7.0), vec2(8.0))), "", true)
+        .packUBO(uniforms :+ Uniform("VERTICES") -> array(5)(vec2(6.0), vec2(7.0), vec2(8.0)), "", true)
         .toList,
       expected.toList ++ List[Float](6, 6, 0, 0, 7, 7, 0, 0, 8, 8, 0, 0) ++ List[Float](0, 0, 0, 0) ++ List[Float](
         0,
@@ -224,7 +210,7 @@ class DisplayObjectConversionsTests extends munit.FunSuite {
     // 6 array padded.
     assertEquals(
       DisplayObjectConversions
-        .packUBO((uniforms :+ Uniform("VERTICES") -> array(6)(vec2(6.0), vec2(7.0), vec2(8.0))), "", true)
+        .packUBO(uniforms :+ Uniform("VERTICES") -> array(6)(vec2(6.0), vec2(7.0), vec2(8.0)), "", true)
         .toList,
       expected.toList ++ List[Float](6, 6, 0, 0, 7, 7, 0, 0, 8, 8, 0, 0) ++ List[Float](0, 0, 0, 0) ++ List[Float](
         0,
@@ -237,7 +223,7 @@ class DisplayObjectConversionsTests extends munit.FunSuite {
     // 7 array padded.
     assertEquals(
       DisplayObjectConversions
-        .packUBO((uniforms :+ Uniform("VERTICES") -> array(7)(vec2(6.0), vec2(7.0), vec2(8.0))), "", true)
+        .packUBO(uniforms :+ Uniform("VERTICES") -> array(7)(vec2(6.0), vec2(7.0), vec2(8.0)), "", true)
         .toList,
       expected.toList ++ List[Float](6, 6, 0, 0, 7, 7, 0, 0, 8, 8, 0, 0) ++ List[Float](0, 0, 0, 0) ++ List[Float](
         0,
@@ -250,7 +236,7 @@ class DisplayObjectConversionsTests extends munit.FunSuite {
     // 8 array padded.
     assertEquals(
       DisplayObjectConversions
-        .packUBO((uniforms :+ Uniform("VERTICES") -> array(8)(vec2(6.0), vec2(7.0), vec2(8.0))), "", true)
+        .packUBO(uniforms :+ Uniform("VERTICES") -> array(8)(vec2(6.0), vec2(7.0), vec2(8.0)), "", true)
         .toList,
       expected.toList ++ List[Float](6, 6, 0, 0, 7, 7, 0, 0, 8, 8, 0, 0) ++ List[Float](0, 0, 0, 0) ++
         List[Float](0, 0, 0, 0) ++ List[Float](0, 0, 0, 0) ++ List[Float](0, 0, 0, 0) ++
@@ -260,7 +246,7 @@ class DisplayObjectConversionsTests extends munit.FunSuite {
     // 16 array padded.
     assertEquals(
       DisplayObjectConversions
-        .packUBO((uniforms :+ Uniform("VERTICES") -> array(16)(vec2(6.0), vec2(7.0), vec2(8.0))), "", true)
+        .packUBO(uniforms :+ Uniform("VERTICES") -> array(16)(vec2(6.0), vec2(7.0), vec2(8.0)), "", true)
         .toList,
       expected.toList ++ List[Float](6, 6, 0, 0, 7, 7, 0, 0, 8, 8, 0, 0) ++
         List[Float](0, 0, 0, 0) ++

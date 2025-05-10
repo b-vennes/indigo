@@ -4,28 +4,26 @@ import indigo.FontKey
 import indigo.platform.renderer.ScreenCaptureConfig
 import indigo.shared.assets.AssetType
 import indigo.shared.collections.Batch
+import indigo.shared.config.GameViewport
 import indigo.shared.datatypes.Rectangle
+import indigo.shared.datatypes.Size
 import indigo.shared.dice.Dice
 import indigo.shared.events.InputState
 import indigo.shared.scenegraph.SceneNode
-import indigo.shared.scenegraph.TextBox
 import indigo.shared.scenegraph.TextLine
 import indigo.shared.time.GameTime
-import org.scalajs.dom.Screen
 
 /** The Context is the context in which the current frame will be processed.
   *
   * This is divided into three main areas:
   *
   *   1. StartUpData: The data that was passed into the game at the start, and is available globally.
-  *
-  * 2. Frame: The data that is specific to the current frame, such as the current time, input state, and dice (pseudo
-  * random number generated seeded on the game's running time at the beginning of the frame), and if only frame values
-  * are used, then calls to functions like `updateModel` can be considered referentially transparent.
-  *
-  * 3. Services: The services that are available to the game, such as the ability to capture the screen, measure text,
-  * find the bounds of on-screen elements, or access a long running Random instance. Services are side-effecting, long
-  * running, and / or stateful.
+  *   2. Frame: The data that is specific to the current frame, such as the current time, input state, and dice (pseudo
+  *      random number generated seeded on the game's running time at the beginning of the frame), and if only frame
+  *      values are used, then calls to functions like `updateModel` can be considered referentially transparent.
+  *   3. Services: The services that are available to the game, such as the ability to capture the screen, measure text,
+  *      find the bounds of on-screen elements, or access a long running Random instance. Services are side-effecting,
+  *      long running, and / or stateful.
   */
 final class Context[StartUpData](
     _startUpData: => StartUpData,
@@ -34,8 +32,9 @@ final class Context[StartUpData](
 ):
   lazy val startUpData = _startUpData
 
-  def withStartUpData(newStartUpData: StartUpData): Context[StartUpData] =
+  def withStartUpData[B](newStartUpData: B): Context[B] =
     new Context(newStartUpData, frame, services)
+
   def modifyStartUpData(modify: StartUpData => StartUpData): Context[StartUpData] =
     withStartUpData(modify(startUpData))
 
@@ -67,6 +66,8 @@ object Context:
       gameTime: GameTime,
       dice: Dice,
       inputState: InputState,
+      viewport: GameViewport,
+      globalMagnification: Int,
       boundaryLocator: BoundaryLocator,
       startUpData: StartUpData,
       _captureScreen: Batch[ScreenCaptureConfig] => Batch[Either[String, AssetType.Image]]
@@ -76,7 +77,9 @@ object Context:
       Frame(
         dice,
         gameTime,
-        inputState
+        inputState,
+        viewport,
+        globalMagnification
       ),
       Services(
         boundaryLocator,
@@ -90,23 +93,31 @@ object Context:
   final class Frame(
       val dice: Dice,
       val time: GameTime,
-      val input: InputState
+      val input: InputState,
+      val viewport: GameViewport,
+      val globalMagnification: Int
   ):
     def withDice(newDice: Dice): Frame =
-      new Frame(newDice, time, input)
+      new Frame(newDice, time, input, viewport, globalMagnification)
 
     def withTime(newTime: GameTime): Frame =
-      new Frame(dice, newTime, input)
+      new Frame(dice, newTime, input, viewport, globalMagnification)
 
     def withInput(newInput: InputState): Frame =
-      new Frame(dice, time, newInput)
+      new Frame(dice, time, newInput, viewport, globalMagnification)
+
+    def withViewport(newViewport: GameViewport): Frame =
+      new Frame(dice, time, input, newViewport, globalMagnification)
+
+    def withGlobalMagnification(newGlobalMagnification: Int): Frame =
+      new Frame(dice, time, input, viewport, newGlobalMagnification)
 
   object Frame:
-    def apply(dice: Dice, time: GameTime, input: InputState): Frame =
-      new Frame(dice, time, input)
+    def apply(dice: Dice, time: GameTime, input: InputState, viewport: GameViewport, globalMagnification: Int): Frame =
+      new Frame(dice, time, input, viewport, globalMagnification)
 
     val initial: Frame =
-      new Frame(Dice.default, GameTime.zero, InputState.default)
+      new Frame(Dice.default, GameTime.zero, InputState.default, GameViewport(Size.zero), 1)
 
   /** The services that are available to the game, such as the ability to capture the screen, measure text, find the
     * bounds of anything on screen, or access a long running Random instance. Services are side-effecting, long running,
@@ -136,8 +147,6 @@ object Context:
         def screen: Screen = Screen.noop
 
     trait Bounds:
-      def measureText(textBox: TextBox): Rectangle
-
       /** Safely finds the bounds of any given scene node, if the node has bounds. It is not possible to sensibly
         * measure the bounds of some node types, such as clones, and some nodes are dependant on external data that may
         * be missing.
@@ -153,7 +162,6 @@ object Context:
     object Bounds:
       def apply(boundaryLocator: BoundaryLocator): Bounds =
         new Bounds:
-          def measureText(textBox: TextBox): Rectangle      = boundaryLocator.measureText(textBox)
           def find(sceneNode: SceneNode): Option[Rectangle] = boundaryLocator.findBounds(sceneNode)
           def get(sceneNode: SceneNode): Rectangle          = boundaryLocator.bounds(sceneNode)
           def textAsLinesWithBounds(
@@ -166,7 +174,6 @@ object Context:
 
       def noop: Bounds =
         new Bounds:
-          def measureText(textBox: TextBox): Rectangle      = Rectangle.zero
           def find(sceneNode: SceneNode): Option[Rectangle] = None
           def get(sceneNode: SceneNode): Rectangle          = Rectangle.zero
           def textAsLinesWithBounds(

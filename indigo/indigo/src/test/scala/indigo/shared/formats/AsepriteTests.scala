@@ -1,14 +1,12 @@
 package indigo.shared.formats
 
-import indigo.shared.animation._
+import indigo.shared.animation.*
 import indigo.shared.assets.AssetName
 import indigo.shared.collections.NonEmptyList
-import indigo.shared.datatypes._
+import indigo.shared.datatypes.*
 import indigo.shared.dice.Dice
-import indigo.shared.events.GlobalEvent
-import indigo.shared.formats._
 import indigo.shared.materials.Material
-import indigo.shared.scenegraph._
+import indigo.shared.scenegraph.*
 import indigo.shared.time.Millis
 import indigo.shared.time.Seconds
 
@@ -55,8 +53,6 @@ class AsepriteTests extends munit.FunSuite {
 }
 
 object AsepriteSampleData {
-
-  val depth: Depth = Depth.zero
 
   val imageAssetRef: AssetName = AssetName("trafficlights")
 
@@ -184,7 +180,6 @@ object AsepriteSampleData {
     Sprite(
       bindingKey = BindingKey("0000000000000000"),
       position = Point.zero,
-      depth = depth,
       rotation = Radians.zero,
       scale = Vector2.one,
       animationKey = animationKey,

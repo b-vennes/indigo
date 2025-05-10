@@ -1,6 +1,5 @@
 package indigo.shared.platform
 
-import indigo.platform.assets.AtlasId
 import indigo.shared.AnimationsRegister
 import indigo.shared.BoundaryLocator
 import indigo.shared.FontRegister
@@ -17,7 +16,6 @@ import indigo.shared.datatypes.Radians
 import indigo.shared.datatypes.Rectangle
 import indigo.shared.datatypes.TextAlignment
 import indigo.shared.datatypes.Vector2
-import indigo.shared.datatypes.Vector3
 import indigo.shared.datatypes.mutable.CheapMatrix4
 import indigo.shared.display.DisplayCloneBatch
 import indigo.shared.display.DisplayCloneTiles
@@ -26,13 +24,10 @@ import indigo.shared.display.DisplayGroup
 import indigo.shared.display.DisplayMutants
 import indigo.shared.display.DisplayObject
 import indigo.shared.display.DisplayObjectUniformData
-import indigo.shared.display.DisplayText
 import indigo.shared.display.DisplayTextLetters
 import indigo.shared.display.SpriteSheetFrame
 import indigo.shared.display.SpriteSheetFrame.SpriteSheetFrameCoordinateOffsets
 import indigo.shared.events.GlobalEvent
-import indigo.shared.materials.ShaderData
-import indigo.shared.platform.AssetMapping
 import indigo.shared.scenegraph.CloneBatch
 import indigo.shared.scenegraph.CloneId
 import indigo.shared.scenegraph.CloneTileData
@@ -47,15 +42,16 @@ import indigo.shared.scenegraph.SceneNode
 import indigo.shared.scenegraph.Shape
 import indigo.shared.scenegraph.Sprite
 import indigo.shared.scenegraph.Text
-import indigo.shared.scenegraph.TextBox
 import indigo.shared.scenegraph.TextLine
+import indigo.shared.shader.ShaderData
 import indigo.shared.shader.ShaderPrimitive
 import indigo.shared.shader.Uniform
 import indigo.shared.shader.UniformBlock
 import indigo.shared.time.GameTime
 
+import scala.annotation.nowarn
 import scala.annotation.tailrec
-import scala.scalajs.js.JSConverters._
+import scala.scalajs.js.JSConverters.*
 
 final class DisplayObjectConversions(
     boundaryLocator: BoundaryLocator,
@@ -110,14 +106,12 @@ final class DisplayObjectConversions(
       QuickCache(batch.staticBatchKey.get.toString) {
         new DisplayCloneBatch(
           id = batch.id,
-          z = batch.depth.toDouble,
           cloneData = batch.cloneData.toJSArray
         )
       }
     else
       new DisplayCloneBatch(
         id = batch.id,
-        z = batch.depth.toDouble,
         cloneData = batch.cloneData.toJSArray
       )
 
@@ -126,14 +120,12 @@ final class DisplayObjectConversions(
       QuickCache(batch.staticBatchKey.get.toString) {
         new DisplayCloneTiles(
           id = batch.id,
-          z = batch.depth.toDouble,
           cloneData = batch.cloneData.toJSArray
         )
       }
     else
       new DisplayCloneTiles(
         id = batch.id,
-        z = batch.depth.toDouble,
         cloneData = batch.cloneData.toJSArray
       )
 
@@ -149,7 +141,6 @@ final class DisplayObjectConversions(
 
     new DisplayMutants(
       id = batch.id,
-      z = batch.depth.toDouble,
       cloneData = batch.uniformBlocks.toJSArray.map(uniformDataConvert)
     )
 
@@ -235,9 +226,6 @@ final class DisplayObjectConversions(
       case s: Shape[_] =>
         (shapeToDisplayObject(s), noClones)
 
-      case t: TextBox =>
-        (textBoxToDisplayText(t), noClones)
-
       case s: EntityNode[_] =>
         (sceneEntityToDisplayObject(s, assetMapping), noClones)
 
@@ -292,7 +280,6 @@ final class DisplayObjectConversions(
         (
           DisplayGroup(
             groupToMatrix(g),
-            g.depth.toDouble,
             children._1
           ),
           children._2
@@ -392,7 +379,6 @@ final class DisplayObjectConversions(
             letters.grouped(maxBatchSize).toJSArray.map { d =>
               new DisplayCloneTiles(
                 id = cloneId,
-                z = x.depth.toDouble,
                 cloneData = d
               )
             }
@@ -457,7 +443,6 @@ final class DisplayObjectConversions(
       flipX = if leaf.flip.horizontal then -1.0 else 1.0,
       flipY = if leaf.flip.vertical then -1.0 else 1.0,
       rotation = leaf.rotation,
-      z = leaf.depth.toDouble,
       width = bounds.size.width,
       height = bounds.size.height,
       atlasName = None,
@@ -523,7 +508,6 @@ final class DisplayObjectConversions(
       flipX = if leaf.flip.horizontal then -1.0 else 1.0,
       flipY = if leaf.flip.vertical then -1.0 else 1.0,
       rotation = leaf.rotation,
-      z = leaf.depth.toDouble,
       width = bounds.size.width,
       height = bounds.size.height,
       atlasName = texture.map(_.atlasName),
@@ -538,24 +522,6 @@ final class DisplayObjectConversions(
       shaderUniformData = uniformData
     )
   }
-
-  def textBoxToDisplayText(leaf: TextBox): DisplayText =
-    DisplayText(
-      text = leaf.text,
-      style = leaf.style,
-      x = leaf.position.x.toFloat,
-      y = leaf.position.y.toFloat,
-      scaleX = leaf.scale.x.toFloat,
-      scaleY = leaf.scale.y.toFloat,
-      refX = leaf.ref.x.toFloat,
-      refY = leaf.ref.y.toFloat,
-      flipX = if leaf.flip.horizontal then -1.0 else 1.0,
-      flipY = if leaf.flip.vertical then -1.0 else 1.0,
-      rotation = leaf.rotation,
-      z = leaf.depth.toDouble,
-      width = leaf.size.width,
-      height = leaf.size.height
-    )
 
   def graphicToDisplayObject(leaf: Graphic[?], assetMapping: AssetMapping): DisplayObject = {
     val shaderData     = leaf.material.toShaderData
@@ -598,7 +564,6 @@ final class DisplayObjectConversions(
       flipX = if leaf.flip.horizontal then -1.0 else 1.0,
       flipY = if leaf.flip.vertical then -1.0 else 1.0,
       rotation = leaf.rotation,
-      z = leaf.depth.toDouble,
       width = leaf.crop.size.width,
       height = leaf.crop.size.height,
       atlasName = Some(texture.atlasName),
@@ -663,7 +628,6 @@ final class DisplayObjectConversions(
       flipX = if leaf.flip.horizontal then -1.0 else 1.0,
       flipY = if leaf.flip.vertical then -1.0 else 1.0,
       rotation = leaf.rotation,
-      z = leaf.depth.toDouble,
       width = bounds.width,
       height = bounds.height,
       atlasName = Some(texture.atlasName),
@@ -700,7 +664,6 @@ final class DisplayObjectConversions(
           leaf.ref.hashCode.toString +
           leaf.flip.horizontal.toString +
           leaf.flip.vertical.toString +
-          leaf.depth.toString +
           leaf.fontKey.toString +
           line.hashCode.toString
 
@@ -742,7 +705,6 @@ final class DisplayObjectConversions(
             flipX = if leaf.flip.horizontal then -1.0 else 1.0,
             flipY = if leaf.flip.vertical then -1.0 else 1.0,
             rotation = leaf.rotation,
-            z = leaf.depth.toDouble,
             width = fontChar.bounds.width,
             height = fontChar.bounds.height,
             atlasName = Some(texture.atlasName),
@@ -775,7 +737,6 @@ final class DisplayObjectConversions(
           leaf.ref.hashCode.toString +
           leaf.flip.horizontal.toString +
           leaf.flip.vertical.toString +
-          leaf.depth.toString +
           leaf.fontKey.toString
       )
 
@@ -817,7 +778,6 @@ final class DisplayObjectConversions(
           flipX = if leaf.flip.horizontal then -1.0 else 1.0,
           flipY = if leaf.flip.vertical then -1.0 else 1.0,
           rotation = leaf.rotation,
-          z = leaf.depth.toDouble,
           width = 1,
           height = 1,
           atlasName = Some(texture.atlasName),
@@ -872,6 +832,7 @@ final class DisplayObjectConversions(
   @SuppressWarnings(Array("scalafix:DisableSyntax.var"))
   private var accCharDetails: scalajs.js.Array[(FontChar, Int)] = new scalajs.js.Array()
 
+  @nowarn("msg=unused")
   private def zipWithCharDetails(
       charList: Array[Char],
       fontInfo: FontInfo,

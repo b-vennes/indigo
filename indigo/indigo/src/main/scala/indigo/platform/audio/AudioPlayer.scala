@@ -2,6 +2,7 @@ package indigo.platform.audio
 
 import indigo.platform.assets.LoadedAudioAsset
 import indigo.shared.assets.AssetName
+import indigo.shared.audio.PlaybackPolicy
 import indigo.shared.audio.Volume
 import indigo.shared.datatypes.BindingKey
 import indigo.shared.scenegraph.PlaybackPattern
@@ -13,8 +14,9 @@ import org.scalajs.dom.AudioBufferSourceNode
 import org.scalajs.dom.AudioContext
 import org.scalajs.dom.AudioDestinationNode
 import org.scalajs.dom.GainNode
-import org.scalajs.macrotaskexecutor.MacrotaskExecutor.Implicits._
+import org.scalajs.macrotaskexecutor.MacrotaskExecutor.Implicits.*
 
+import scala.collection.mutable
 import scala.concurrent.Future
 import scala.scalajs.js
 
@@ -113,9 +115,29 @@ final class AudioPlayer(context: AudioContextProxy):
   private def findAudioDataByName(assetName: AssetName): Option[dom.AudioBuffer] =
     soundAssets.find(a => a.name == assetName).map(_.data)
 
-  def playSound(assetName: AssetName, volume: Volume): Unit =
+  private val soundNodes: mutable.Map[AssetName, AudioNodes] = mutable.HashMap.empty
+
+  @SuppressWarnings(Array("scalafix:DisableSyntax.null"))
+  private def stopSound(assetName: AssetName): Unit =
+    soundNodes.remove(assetName).foreach { source =>
+      source.audioBufferSourceNode.onended = null
+      source.audioBufferSourceNode.stop()
+    }
+
+  private def stopAllSound(): Unit =
+    soundNodes.keySet.foreach(stopSound)
+
+  def playSound(assetName: AssetName, volume: Volume, policy: PlaybackPolicy): Unit =
     findAudioDataByName(assetName).foreach { sound =>
-      setupNodes(sound, volume, loop = false).audioBufferSourceNode.start(0)
+      val node = setupNodes(sound, volume, loop = false)
+      node.audioBufferSourceNode.onended = _ => soundNodes.remove(assetName)
+      node.audioBufferSourceNode.start(0)
+      policy match {
+        case PlaybackPolicy.StopAll          => stopAllSound()
+        case PlaybackPolicy.StopPreviousSame => stopSound(assetName)
+        case PlaybackPolicy.Continue         => ()
+      }
+      soundNodes.update(assetName, node)
     }
 
   @SuppressWarnings(Array("scalafix:DisableSyntax.var"))
@@ -208,12 +230,9 @@ final class AudioPlayer(context: AudioContextProxy):
   private def needsVolumeChange(playing: AudioSourceState, next: SceneAudioSource): Boolean =
     playing.bindingKey == next.bindingKey && !(playing.volume ~== next.volume)
 
-  @SuppressWarnings(Array("scalafix:DisableSyntax.null"))
   def kill(): Unit =
     soundAssets = Set()
-    sourceA = null
-    sourceB = null
-    sourceC = null
+    playAudio(None)
     ()
 
   private class AudioSourceState(val bindingKey: BindingKey, val volume: Volume, val audioNodes: AudioNodes)

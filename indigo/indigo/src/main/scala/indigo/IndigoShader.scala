@@ -1,28 +1,23 @@
 package indigo
 
-import indigo.*
 import indigo.entry.StandardFrameProcessor
 import indigo.gameengine.GameEngine
+import indigo.shared.shader.UniformBlock
 import indigo.shared.shader.library
 import indigo.shared.shader.library.IndigoUV.BlendFragmentEnvReference
 import indigo.shared.subsystems.SubSystemsRegister
 import org.scalajs.dom.Element
-import org.scalajs.macrotaskexecutor.MacrotaskExecutor.Implicits._
+import org.scalajs.macrotaskexecutor.MacrotaskExecutor.Implicits.*
 
+import scala.annotation.nowarn
 import scala.concurrent.Future
 
 /** A trait representing a shader that fills the available window.
-  *
-  * You can override a number of the details in this trait using launch flags, including:
-  *
-  *   - width - starting width of the shader
-  *   - height - starting height of the shader
-  *   - channel0 - path to an image
-  *   - channel1 - path to an image
-  *   - channel2 - path to an image
-  *   - channel3 - path to an image
   */
 trait IndigoShader extends GameLauncher[IndigoShaderModel, IndigoShaderModel, Unit] {
+
+  given [A](using toUBO: ToUniformBlock[A]): Conversion[A, UniformBlock] with
+    def apply(value: A): UniformBlock = toUBO.toUniformBlock(value)
 
   private val Channel0Name: String = "channel0"
   private val Channel1Name: String = "channel1"
@@ -53,9 +48,36 @@ trait IndigoShader extends GameLauncher[IndigoShaderModel, IndigoShaderModel, Un
     */
   def channel3: Option[AssetPath]
 
+  /** The uniform blocks (data) you want to pass to your shader. Example:
+    *
+    * ```scala
+    * import indigo.*
+    * import indigo.syntax.shaders.*
+    * import ultraviolet.syntax.*
+    *
+    * final case class CustomData(color: vec4, customTime: Float) extends FragmentEnvReference derives ToUniformBlock
+    * def uniformBlocks: Batch[UniformBlock] = Batch(CustomData(RGBA.Magenta.toUVVec4, 0.seconds.toFloat))
+    * ```
+    *
+    * As long as the field types in your case class are ultraviolet types, you can pass them to your shader, see
+    * Ultraviolet docs for more info.
+    *
+    * Many standard Indigo types are supported for the data fields, but you will need a separate case class for the
+    * Shader side of the data contract definition, i.e. This is valid too:
+    *
+    * ```scala
+    * // For use with Indigo's shader setup. Note: derives ToUniformBlock, but doesn't need to extend FragmentEnvReference
+    * final case class CustomDataIndigo(color: RGBA, customTime: Seconds) derives ToUniformBlock
+    *
+    * // For use with Ultraviolet's UBO definitions. Note extends FragmentEnvReference, but doesn't derive ToUniformBlock
+    * final case class CustomDataUV(color: vec4, customTime: Float) extends FragmentEnvReference
+    * ```
+    */
+  def uniformBlocks: Batch[UniformBlock]
+
   /** The shader you want to render
     */
-  def shader: Shader
+  def shader: ShaderProgram
 
   private def boot(flags: Map[String, String]): Outcome[BootResult[IndigoShaderModel, IndigoShaderModel]] =
     val width  = flags.get("width").map(_.toInt).getOrElse(config.viewport.width)
@@ -66,7 +88,7 @@ trait IndigoShader extends GameLauncher[IndigoShaderModel, IndigoShaderModel, Un
     val c3     = flags.get(Channel3Name).map(p => AssetPath(p)).orElse(channel3)
 
     val channelAssets: Set[AssetType] =
-      (c0.toSet.map(Channel0Name  -> _) ++
+      (c0.toSet.map(Channel0Name -> _) ++
         c1.toSet.map(Channel1Name -> _) ++
         c2.toSet.map(Channel2Name -> _) ++
         c3.toSet.map(Channel3Name -> _)).map { case (channel, path) =>
@@ -102,9 +124,7 @@ trait IndigoShader extends GameLauncher[IndigoShaderModel, IndigoShaderModel, Un
     )
 
   private def setup(
-      bootData: IndigoShaderModel,
-      assetCollection: AssetCollection,
-      dice: Dice
+      bootData: IndigoShaderModel
   ): Outcome[Startup[IndigoShaderModel]] =
     Outcome(
       Startup.Success(
@@ -116,7 +136,6 @@ trait IndigoShader extends GameLauncher[IndigoShaderModel, IndigoShaderModel, Un
     Outcome(startupData)
 
   private def updateModel(
-      context: Context[IndigoShaderModel],
       model: IndigoShaderModel
   ): GlobalEvent => Outcome[IndigoShaderModel] = {
     case ViewportResize(vp) =>
@@ -130,7 +149,6 @@ trait IndigoShader extends GameLauncher[IndigoShaderModel, IndigoShaderModel, Un
   }
 
   private def present(
-      context: Context[IndigoShaderModel],
       model: IndigoShaderModel
   ): Outcome[SceneUpdateFragment] =
     Outcome(
@@ -140,7 +158,7 @@ trait IndigoShader extends GameLauncher[IndigoShaderModel, IndigoShaderModel, Un
             model.viewport,
             ShaderData(
               shader.id,
-              Batch.empty,
+              uniformBlocks,
               model.channel0,
               model.channel1,
               model.channel2,
@@ -179,16 +197,16 @@ trait IndigoShader extends GameLauncher[IndigoShaderModel, IndigoShaderModel, Un
       new StandardFrameProcessor(
         new SubSystemsRegister(),
         eventFilters,
-        (ctx, m) => (e: GlobalEvent) => updateModel(ctx, m)(e),
+        (_, m) => (e: GlobalEvent) => updateModel(m)(e),
         updateViewModel,
-        (ctx, m, _) => present(ctx, m)
+        (_, m, _) => present(m)
       )
 
     new GameEngine[IndigoShaderModel, IndigoShaderModel, Unit](
       Set(),
       Set(),
       boot.shaders,
-      (ac: AssetCollection) => (d: Dice) => setup(boot.bootData, ac, d),
+      (_: AssetCollection) => (_: Dice) => setup(boot.bootData),
       (sd: IndigoShaderModel) => initialModel(sd),
       (_: IndigoShaderModel) => (_: IndigoShaderModel) => Outcome(()),
       frameProcessor,
@@ -238,6 +256,7 @@ object SceneBlendShader:
   object Env:
     val reference: Env = new Env {}
 
+  @nowarn
   inline def fragment =
     Shader[Env] { env =>
       def fragment(color: vec4): vec4 =
@@ -246,5 +265,5 @@ object SceneBlendShader:
 
   val material: BlendMaterial =
     new BlendMaterial:
-      def toShaderData: BlendShaderData =
-        BlendShaderData(shader.id)
+      def toShaderData: ShaderData =
+        ShaderData(shader.id)

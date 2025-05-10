@@ -2,20 +2,22 @@ package indigo.platform.networking
 
 import indigo.platform.events.GlobalEventStream
 import indigo.shared.IndigoLogger
-import indigo.shared.events._
+import indigo.shared.events.*
 import indigo.shared.networking.WebSocketConfig
 import indigo.shared.networking.WebSocketEvent
-import indigo.shared.networking.WebSocketId
 import indigo.shared.networking.WebSocketReadyState
 import indigo.shared.networking.WebSocketReadyState.CLOSED
 import indigo.shared.networking.WebSocketReadyState.CLOSING
 import org.scalajs.dom
+
+import scala.annotation.nowarn
 
 object WebSockets:
 
   private val connections: scalajs.js.Dictionary[dom.WebSocket] = scalajs.js.Dictionary.empty
   private val configs: scalajs.js.Dictionary[WebSocketConfig]   = scalajs.js.Dictionary.empty
 
+  @nowarn("msg=unused")
   def processSendEvent(event: WebSocketEvent & NetworkSendEvent, globalEventStream: GlobalEventStream): Unit =
     try
       event match {
@@ -44,7 +46,6 @@ object WebSockets:
       .flatMap { c =>
         if (c == config) Option(c)
         else {
-          configs.remove(config.id.id)
           configs.put(config.id.id, config)
         }
       }
@@ -62,7 +63,6 @@ object WebSockets:
         WebSocketReadyState.fromInt(conn.readyState) match {
           case CLOSING | CLOSED =>
             newConnection(config, onOpenSendMessage, globalEventStream).flatMap { newConn =>
-              connections.remove(config.id.id)
               connections.put(config.id.id, newConn)
             }
 
@@ -72,7 +72,6 @@ object WebSockets:
       }
       .orElse {
         newConnection(config, onOpenSendMessage, globalEventStream).flatMap { newConn =>
-          connections.remove(config.id.id)
           connections.put(config.id.id, newConn)
         }
       }

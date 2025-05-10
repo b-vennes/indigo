@@ -1,7 +1,6 @@
 package indigo.shared.collections
 
 import scala.annotation.tailrec
-import scala.annotation.targetName
 import scala.reflect.ClassTag
 import scala.util.control.NonFatal
 
@@ -80,6 +79,9 @@ sealed trait Batch[+A]:
 
   def dropRight(count: Int): Batch[A] =
     Batch.Wrapped(_jsArray.dropRight(count))
+
+  def dropWhile(p: A => Boolean): Batch[A] =
+    Batch.Wrapped(_jsArray.dropWhile(p))
 
   def exists(p: A => Boolean): Boolean =
     _jsArray.exists(p)
@@ -246,6 +248,9 @@ sealed trait Batch[+A]:
 
   def zip[B](other: Batch[B]): Batch[(A, B)] =
     Batch.Wrapped(_jsArray.zip(other.toJSArray))
+
+  override def hashCode(): Int =
+    _jsArray.foldLeft(31)((acc, v) => 31 * acc + v.hashCode())
 
 object Batch:
 
@@ -415,7 +420,6 @@ object Batch:
 
   @SuppressWarnings(Array("scalafix:DisableSyntax.throw"))
   def sequenceOption[A](b: Batch[Option[A]]): Option[Batch[A]] =
-    import indigo.syntax.==:
     @tailrec
     def rec(remaining: Batch[Option[A]], acc: Batch[A]): Option[Batch[A]] =
       if remaining.isEmpty then Option(acc.reverse)

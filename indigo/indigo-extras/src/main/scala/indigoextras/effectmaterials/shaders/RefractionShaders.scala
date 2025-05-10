@@ -5,6 +5,8 @@ import indigo.shared.shader.library.Lighting
 import indigo.shared.shader.library.TileAndStretch
 import ultraviolet.syntax.*
 
+import scala.annotation.nowarn
+
 object RefractionShaders:
 
   trait BlendEnv extends BlendFragmentEnvReference {
@@ -14,13 +16,15 @@ object RefractionShaders:
     val reference: BlendEnv = new BlendEnv {}
 
   trait FragEnv extends Lighting.LightEnv {
-    val FILLTYPE: highp[Float] = 0.0f
+    val FILLTYPE: highp[Float]         = 0.0f
+    val NINE_SLICE_CENTER: highp[vec4] = vec4(0.0f)
   }
   object FragEnv:
     val reference: FragEnv = new FragEnv {}
 
   final case class IndigoRefractionBlendData(REFRACTION_AMOUNT: Float)
 
+  @nowarn("msg=unused")
   inline def refractionFragment =
     Shader[BlendEnv] { env =>
       ubo[IndigoRefractionBlendData]
@@ -32,14 +36,18 @@ object RefractionShaders:
         texture2D(env.DST_CHANNEL, offset)
     }
 
-  final case class IndigoBitmapData(FILLTYPE: highp[Float])
+  final case class IndigoBitmapData(
+      FILLTYPE: highp[Float],
+      NINE_SLICE_CENTER: highp[vec4]
+  )
 
+  @nowarn("msg=unused")
   inline def normalMinusBlue =
     Shader[FragEnv] { env =>
       import TileAndStretch.*
 
       // Delegates
-      val _tileAndStretchChannel: (Int, vec4, sampler2D.type, vec2, vec2, vec2, vec2, vec2) => vec4 =
+      val _tileAndStretchChannel: (Int, vec4, sampler2D.type, vec2, vec2, vec2, vec2, vec2, vec4) => vec4 =
         tileAndStretchChannel
 
       ubo[IndigoBitmapData]
@@ -54,7 +62,8 @@ object RefractionShaders:
           env.CHANNEL_0_SIZE,
           env.UV,
           env.SIZE,
-          env.TEXTURE_SIZE
+          env.TEXTURE_SIZE,
+          env.NINE_SLICE_CENTER
         )
         env.CHANNEL_1 = _tileAndStretchChannel(
           env.FILLTYPE.toInt,
@@ -64,7 +73,8 @@ object RefractionShaders:
           env.CHANNEL_0_SIZE,
           env.UV,
           env.SIZE,
-          env.TEXTURE_SIZE
+          env.TEXTURE_SIZE,
+          env.NINE_SLICE_CENTER
         )
         env.CHANNEL_2 = _tileAndStretchChannel(
           env.FILLTYPE.toInt,
@@ -74,7 +84,8 @@ object RefractionShaders:
           env.CHANNEL_0_SIZE,
           env.UV,
           env.SIZE,
-          env.TEXTURE_SIZE
+          env.TEXTURE_SIZE,
+          env.NINE_SLICE_CENTER
         )
         env.CHANNEL_3 = _tileAndStretchChannel(
           env.FILLTYPE.toInt,
@@ -84,7 +95,8 @@ object RefractionShaders:
           env.CHANNEL_0_SIZE,
           env.UV,
           env.SIZE,
-          env.TEXTURE_SIZE
+          env.TEXTURE_SIZE,
+          env.NINE_SLICE_CENTER
         )
 
         val redGreen = vec3(env.CHANNEL_0.xy, 0.0f)

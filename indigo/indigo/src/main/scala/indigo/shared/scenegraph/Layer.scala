@@ -1,8 +1,6 @@
 package indigo.shared.scenegraph
 
 import indigo.shared.collections.Batch
-import indigo.shared.datatypes.BindingKey
-import indigo.shared.datatypes.Depth
 import indigo.shared.materials.BlendMaterial
 
 import scala.annotation.tailrec
@@ -26,7 +24,7 @@ enum Layer derives CanEqual:
 
   /** Content layers are used to stack collections of screen elements on top of one another.
     *
-    * During the scene render, each layer in depth order is _blended_ into the one below it, a bit like doing a foldLeft
+    * During the scene render, each layer in order is _blended_ into the one below it, a bit like doing a foldLeft
     * over a list. You can control how the blend is performed to create effects.
     *
     * Layer fields are all either Batchs or options to denote that you _can_ have them but that it isn't necessary.
@@ -41,12 +39,10 @@ enum Layer derives CanEqual:
     *   Layer level dynamic lights
     * @param magnification
     *   Optionally set the magnification, defaults to scene magnification.
-    * @param depth
-    *   Specifically set the depth, defaults to scene order.
     * @param visible
     *   Optionally set the visiblity, defaults to visible
     * @param blending
-    *   Optionally describes how to blend this layer onto the one below, by default, simply overlays on onto the other.
+    *   Optionally describes how to blend this layer onto the one below, by default, simply overlays one onto the other.
     * @param camera
     *   Optional camera specifically for this layer. If None, fallback to scene camera, or default camera.
     */
@@ -54,7 +50,6 @@ enum Layer derives CanEqual:
       nodes: Batch[SceneNode],
       lights: Batch[Light],
       magnification: Option[Int],
-      depth: Option[Depth],
       visible: Option[Boolean],
       blending: Option[Blending],
       cloneBlanks: Batch[CloneBlank],
@@ -66,14 +61,7 @@ enum Layer derives CanEqual:
     * @param level
     */
   def withMagnificationForAll(level: Int): Layer =
-    this match
-      case l: Layer.Stack =>
-        l.copy(
-          layers = l.layers.map(_.withMagnificationForAll(level))
-        )
-
-      case l: Layer.Content =>
-        l.withMagnification(level)
+    this.modify { case l: Layer.Content => l.withMagnification(level) }
 
   def toBatch: Batch[Layer.Content] =
     @tailrec
@@ -134,16 +122,25 @@ object Layer:
   object Content:
 
     val empty: Layer.Content =
-      Layer.Content(Batch.empty, Batch.empty, None, None, None, None, Batch.empty, None)
+      Layer.Content(Batch.empty, Batch.empty, None, None, None, Batch.empty, None)
 
     def apply(nodes: SceneNode*): Layer.Content =
-      Layer.Content(Batch.fromSeq(nodes), Batch.empty, None, None, None, None, Batch.empty, None)
+      Layer.Content(Batch.fromSeq(nodes), Batch.empty, None, None, None, Batch.empty, None)
 
     def apply(nodes: Batch[SceneNode]): Layer.Content =
-      Layer.Content(nodes, Batch.empty, None, None, None, None, Batch.empty, None)
+      Layer.Content(nodes, Batch.empty, None, None, None, Batch.empty, None)
 
     def apply(maybeNode: Option[SceneNode]): Layer.Content =
-      Layer.Content(Batch.fromOption(maybeNode), Batch.empty, None, None, None, None, Batch.empty, None)
+      Layer.Content(Batch.fromOption(maybeNode), Batch.empty, None, None, None, Batch.empty, None)
+
+  extension (l: Layer)
+    /** Modifies this layer, and then in the case of Layer.Stack subsequently modifies all child layers using the
+      * partial function defined. Any layer that is not modified by the partial function is returned unchanged.
+      */
+    def modify(pf: PartialFunction[Layer, Layer]): Layer =
+      pf.applyOrElse(l, identity[Layer]) match
+        case Stack(layers) => Stack(layers.map(_.modify(pf)))
+        case l             => l
 
   extension (ls: Layer.Stack)
     def combine(other: Layer.Stack): Layer.Stack =
@@ -160,6 +157,8 @@ object Layer:
     def ++(layers: Batch[Layer]): Layer.Stack =
       ls.append(layers)
 
+    def ::(layer: Layer): Layer.Stack =
+      ls.prepend(layer)
     def prepend(layer: Layer): Layer.Stack =
       ls.copy(layers = layer :: ls.layers)
     def cons(layer: Layer): Layer.Stack =
@@ -170,7 +169,6 @@ object Layer:
       a.nodes ++ b.nodes,
       a.lights ++ b.lights,
       a.magnification.orElse(b.magnification),
-      a.depth.orElse(b.depth),
       a.visible.orElse(b.visible),
       a.blending.orElse(b.blending),
       a.cloneBlanks ++ b.cloneBlanks,
@@ -206,9 +204,6 @@ object Layer:
       addLights(Batch.fromSeq(newLights))
     def addLights(newLights: Batch[Light]): Layer.Content =
       withLights(lc.lights ++ newLights)
-
-    def withDepth(newDepth: Depth): Layer.Content =
-      lc.copy(depth = Option(newDepth))
 
     def withVisibility(isVisible: Boolean): Layer.Content =
       lc.copy(visible = Option(isVisible))

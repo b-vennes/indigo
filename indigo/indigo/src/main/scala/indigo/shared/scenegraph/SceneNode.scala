@@ -1,10 +1,9 @@
 package indigo.shared.scenegraph
 
 import indigo.shared.BoundaryLocator
-import indigo.shared.datatypes._
-import indigo.shared.datatypes.mutable.CheapMatrix4
+import indigo.shared.datatypes.*
 import indigo.shared.events.GlobalEvent
-import indigo.shared.materials.ShaderData
+import indigo.shared.shader.ShaderData
 
 /** The parent type of all nodes a user might use or create. Defines the fields needed to draw something onto the
   * screen.
@@ -13,10 +12,8 @@ sealed trait SceneNode:
   def position: Point
   def rotation: Radians
   def scale: Vector2
-  def depth: Depth
   def flip: Flip
   def ref: Point
-  def withDepth(newDepth: Depth): SceneNode
 object SceneNode:
   given CanEqual[Option[SceneNode], Option[SceneNode]] = CanEqual.derived
   given CanEqual[List[SceneNode], List[SceneNode]]     = CanEqual.derived
@@ -27,7 +24,6 @@ object SceneNode:
 trait RenderNode[T <: SceneNode] extends SceneNode:
   type Out = T
   def size: Size
-  override def withDepth(newDepth: Depth): T
   def eventHandlerEnabled: Boolean
   def eventHandler: ((T, GlobalEvent)) => Option[GlobalEvent]
 object RenderNode:
@@ -39,7 +35,6 @@ object RenderNode:
   */
 trait DependentNode[T <: SceneNode] extends SceneNode:
   type Out = T
-  override def withDepth(newDepth: Depth): T
   def eventHandlerEnabled: Boolean
   def eventHandler: ((T, GlobalEvent)) => Option[GlobalEvent]
 object DependentNode:
@@ -52,7 +47,6 @@ object DependentNode:
   */
 trait EntityNode[T <: SceneNode] extends RenderNode[T]:
   def toShaderData: ShaderData
-  override def withDepth(newDepth: Depth): T
 
   def bounds: Rectangle =
     BoundaryLocator.findBounds(this, position, size, ref)

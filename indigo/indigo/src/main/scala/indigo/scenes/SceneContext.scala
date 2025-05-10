@@ -1,15 +1,6 @@
 package indigo.scenes
 
-import indigo.shared.BoundaryLocator
 import indigo.shared.Context
-import indigo.shared.datatypes.Rectangle
-import indigo.shared.dice.Dice
-import indigo.shared.events.InputState
-import indigo.shared.input.Gamepad
-import indigo.shared.input.Keyboard
-import indigo.shared.input.Mouse
-import indigo.shared.scenegraph.SceneNode
-import indigo.shared.time.GameTime
 import indigo.shared.time.Seconds
 
 /** SceneContext is a Scene specific equivalent of `Context`, and exposes all of the fields and methods of a normal
@@ -35,10 +26,10 @@ final class SceneContext[StartUpData](
   lazy val sceneRunning: Seconds =
     context.frame.time.running - sceneStartTime
 
-  def toFrameContext: Context[StartUpData] =
+  def toContext: Context[StartUpData] =
     context
 
 object SceneContext:
 
-  def fromFrameContext[A](sceneName: SceneName, sceneStartTime: Seconds, ctx: Context[A]): SceneContext[A] =
+  def fromContext[A](sceneName: SceneName, sceneStartTime: Seconds, ctx: Context[A]): SceneContext[A] =
     new SceneContext(sceneName, sceneStartTime, ctx)

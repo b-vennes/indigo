@@ -1,8 +1,7 @@
 package indigo.gameengine
 
 import indigo.platform.Platform
-import indigo.platform.assets.DynamicText
-import indigo.platform.assets._
+import indigo.platform.assets.*
 import indigo.platform.audio.AudioPlayer
 import indigo.platform.events.GlobalEventStream
 import indigo.platform.input.GamepadInputCaptureImpl
@@ -14,7 +13,7 @@ import indigo.shared.FontRegister
 import indigo.shared.IndigoLogger
 import indigo.shared.Outcome
 import indigo.shared.Startup
-import indigo.shared.animation._
+import indigo.shared.animation.*
 import indigo.shared.assets.AssetName
 import indigo.shared.assets.AssetType
 import indigo.shared.collections.Batch
@@ -27,12 +26,12 @@ import indigo.shared.platform.AssetMapping
 import indigo.shared.platform.SceneProcessor
 import indigo.shared.shader.BlendShader
 import indigo.shared.shader.EntityShader
-import indigo.shared.shader.Shader
+import indigo.shared.shader.ShaderProgram
 import indigo.shared.shader.ShaderRegister
 import indigo.shared.shader.StandardShaders
 import indigo.shared.shader.UltravioletShader
 import org.scalajs.dom.Element
-import org.scalajs.macrotaskexecutor.MacrotaskExecutor.Implicits._
+import org.scalajs.macrotaskexecutor.MacrotaskExecutor.Implicits.*
 
 import scala.compiletime.uninitialized
 import scala.concurrent.Future
@@ -40,7 +39,7 @@ import scala.concurrent.Future
 final class GameEngine[StartUpData, GameModel, ViewModel](
     fonts: Set[FontInfo],
     animations: Set[Animation],
-    shaders: Set[Shader],
+    shaders: Set[ShaderProgram],
     initialise: AssetCollection => Dice => Outcome[Startup[StartUpData]],
     initialModel: StartUpData => Outcome[GameModel],
     initialViewModel: StartUpData => GameModel => Outcome[ViewModel],
@@ -55,10 +54,8 @@ final class GameEngine[StartUpData, GameModel, ViewModel](
   val shaderRegister: ShaderRegister =
     new ShaderRegister()
 
-  val dynamicText: DynamicText =
-    new DynamicText()
   val boundaryLocator: BoundaryLocator =
-    new BoundaryLocator(animationsRegister, fontRegister, dynamicText)
+    new BoundaryLocator(animationsRegister, fontRegister)
   val sceneProcessor: SceneProcessor =
     new SceneProcessor(boundaryLocator, animationsRegister, fontRegister)
 
@@ -88,29 +85,17 @@ final class GameEngine[StartUpData, GameModel, ViewModel](
   @SuppressWarnings(Array("scalafix:DisableSyntax.var", "scalafix:DisableSyntax.null"))
   var platform: Platform = null
 
-  @SuppressWarnings(Array("scalafix:DisableSyntax.null"))
   def kill(): Unit =
     platform.kill()
     gameLoopInstance.kill()
     animationsRegister.kill()
     fontRegister.kill()
     shaderRegister.kill()
-    shaderRegister.kill()
     boundaryLocator.purgeCache()
     sceneProcessor.purgeCaches()
     audioPlayer.kill()
     globalEventStream.kill()
 
-    gameConfig = null
-    storage = null
-    globalEventStream = null
-    gamepadInputCapture = null
-    gameLoopInstance = null
-    accumulatedAssetCollection = null
-    assetMapping = null
-    renderer = null
-    startUpData = null.asInstanceOf[StartUpData]
-    platform = null
     ()
 
   @SuppressWarnings(Array("scalafix:DisableSyntax.null"))
@@ -180,7 +165,7 @@ final class GameEngine[StartUpData, GameModel, ViewModel](
 
       val dice = if firstRun then Dice.default else Dice.fromSeed(gameLoopInstance.runningTimeReference.toLong)
 
-      if firstRun then platform = new Platform(parentElement, gameConfig, globalEventStream, dynamicText)
+      if firstRun then platform = new Platform(parentElement, gameConfig, globalEventStream)
 
       initialise(accumulatedAssetCollection)(dice) match {
         case oe @ Outcome.Error(error, _) =>
@@ -268,7 +253,11 @@ object GameEngine {
   def registerFonts(fontRegister: FontRegister, fonts: Set[FontInfo]): Unit =
     fonts.foreach(fontRegister.register)
 
-  def registerShaders(shaderRegister: ShaderRegister, shaders: Set[Shader], assetCollection: AssetCollection): Unit =
+  def registerShaders(
+      shaderRegister: ShaderRegister,
+      shaders: Set[ShaderProgram],
+      assetCollection: AssetCollection
+  ): Unit =
     shaders.foreach {
       case s: EntityShader.Source =>
         shaderRegister.remove(s.id)
@@ -299,19 +288,19 @@ object GameEngine {
       id = external.id,
       vertex = external.vertex
         .map(a => extractShaderCode(assetCollection.findTextDataByName(a), "indigo-vertex", a))
-        .getOrElse(Shader.defaultVertexProgram),
+        .getOrElse(ShaderProgram.defaultVertexProgram),
       fragment = external.fragment
         .map(a => extractShaderCode(assetCollection.findTextDataByName(a), "indigo-fragment", a))
-        .getOrElse(Shader.defaultFragmentProgram),
+        .getOrElse(ShaderProgram.defaultFragmentProgram),
       prepare = external.prepare
         .map(a => extractShaderCode(assetCollection.findTextDataByName(a), "indigo-prepare", a))
-        .getOrElse(Shader.defaultPrepareProgram),
+        .getOrElse(ShaderProgram.defaultPrepareProgram),
       light = external.light
         .map(a => extractShaderCode(assetCollection.findTextDataByName(a), "indigo-light", a))
-        .getOrElse(Shader.defaultLightProgram),
+        .getOrElse(ShaderProgram.defaultLightProgram),
       composite = external.composite
         .map(a => extractShaderCode(assetCollection.findTextDataByName(a), "indigo-composite", a))
-        .getOrElse(Shader.defaultCompositeProgram)
+        .getOrElse(ShaderProgram.defaultCompositeProgram)
     )
 
   def externalBlendShaderToSource(
@@ -322,10 +311,10 @@ object GameEngine {
       id = external.id,
       vertex = external.vertex
         .map(a => extractShaderCode(assetCollection.findTextDataByName(a), "indigo-vertex", a))
-        .getOrElse(Shader.defaultVertexProgram),
+        .getOrElse(ShaderProgram.defaultVertexProgram),
       fragment = external.fragment
         .map(a => extractShaderCode(assetCollection.findTextDataByName(a), "indigo-fragment", a))
-        .getOrElse(Shader.defaultFragmentProgram)
+        .getOrElse(ShaderProgram.defaultFragmentProgram)
     )
 
   private given CanEqual[Option[String], Option[String]] = CanEqual.derived

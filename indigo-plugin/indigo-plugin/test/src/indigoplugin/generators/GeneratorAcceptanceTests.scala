@@ -2,17 +2,22 @@ package indigoplugin.generators
 
 import indigoplugin.IndigoGenerators
 import indigoplugin.FontOptions
+import indigoplugin.FontLayout
 import indigoplugin.CharSet
 import indigoplugin.RGB
+import indigoplugin.utils.Utils
 
 class GeneratorAcceptanceTests extends munit.FunSuite {
 
-  val sourceCSV     = os.pwd / "test-assets" / "data" / "stats.csv"
-  val sourceMD      = os.pwd / "test-assets" / "data" / "stats.md"
-  val sourceColours = os.pwd / "test-assets" / "data" / "colours.txt"
-  val sourceFontTTF = os.pwd / "test-files" / "VCR_OSD_MONO_1.001.ttf"
+  val workspaceDir = Utils.findWorkspace
 
-  val targetDir = os.pwd / "out" / "indigo-plugin-generator-acceptance-test-output"
+  val sourceCSV              = workspaceDir / "test-assets" / "data" / "stats.csv"
+  val sourceMD               = workspaceDir / "test-assets" / "data" / "stats.md"
+  val sourceColours          = workspaceDir / "test-assets" / "data" / "colours.txt"
+  val sourceFontTTF          = workspaceDir / "test-files" / "VCR_OSD_MONO_1.001.ttf"
+  val sourceFontTTFPixelated = workspaceDir / "test-files" / "pixelated.ttf"
+
+  val targetDir = workspaceDir / "out" / "indigo-plugin-generator-acceptance-test-output"
 
   private def cleanUp(): Unit = {
     if (os.exists(targetDir)) {
@@ -25,27 +30,85 @@ class GeneratorAcceptanceTests extends munit.FunSuite {
   override def beforeAll(): Unit                     = cleanUp()
   override def beforeEach(context: BeforeEach): Unit = cleanUp()
 
-  test("Can generate font bitmap and FontInfo from TTF file") {
+  test("Can generate font bitmap and FontInfo from TTF file - normal layout") {
+
+    val imageOutDir = targetDir / Generators.OutputDirName / "images"
+    os.makeDir.all(imageOutDir)
+
+    val options: FontOptions =
+      FontOptions("my font normal", 16, CharSet.ASCII)
+        .withColor(RGB.Green)
+        .noAntiAliasing
+        // .useAntiAliasing
+        .withLayout(FontLayout.Normal(16))
+
+    val files =
+      IndigoGenerators("com.example.test")
+        .embedFont("MyFontNormal", sourceFontTTFPixelated, options, imageOutDir)
+        .toSourcePaths(targetDir)
+
+    files.toList match {
+      case fontInfo :: Nil =>
+        assert(os.exists(fontInfo))
+        assert(os.exists(imageOutDir / "MyFontNormal.png"))
+
+      case _ =>
+        fail(
+          s"Unexpected number of files generated, got ${files.length} files:\n${files.map(_.toString()).mkString("\n")}"
+        )
+    }
+  }
+
+  test("Can generate font bitmap and FontInfo from TTF file - monospace layout") {
 
     val imageOutDir = targetDir / Generators.OutputDirName / "images"
 
     os.makeDir.all(imageOutDir)
 
     val options: FontOptions =
-      FontOptions("my font", 16, CharSet.Alphanumeric)
+      FontOptions("my font mono", 16, CharSet.Alphanumeric)
         .withColor(RGB.Green)
-        .withMaxCharactersPerLine(16)
         .noAntiAliasing
+        .withLayout(FontLayout.monospace(16))
 
     val files =
       IndigoGenerators("com.example.test")
-        .embedFont("MyFont", sourceFontTTF, options, imageOutDir)
+        .embedFont("MyFontMono", sourceFontTTF, options, imageOutDir)
         .toSourcePaths(targetDir)
 
     files.toList match {
       case fontInfo :: Nil =>
         assert(os.exists(fontInfo))
-        assert(os.exists(imageOutDir / "MyFont.png"))
+        assert(os.exists(imageOutDir / "MyFontMono.png"))
+
+      case _ =>
+        fail(
+          s"Unexpected number of files generated, got ${files.length} files:\n${files.map(_.toString()).mkString("\n")}"
+        )
+    }
+  }
+
+  test("Can generate font bitmap and FontInfo from TTF file - indexed grid layout") {
+
+    val imageOutDir = targetDir / Generators.OutputDirName / "images"
+
+    os.makeDir.all(imageOutDir)
+
+    val options: FontOptions =
+      FontOptions("my font indexed", 16, CharSet.ExtendedASCII)
+        .withColor(RGB.White)
+        .noAntiAliasing
+        .withLayout(FontLayout.indexedGrid(16))
+
+    val files =
+      IndigoGenerators("com.example.test")
+        .embedFont("MyFontIndexed", sourceFontTTF, options, imageOutDir)
+        .toSourcePaths(targetDir)
+
+    files.toList match {
+      case fontInfo :: Nil =>
+        assert(os.exists(fontInfo))
+        assert(os.exists(imageOutDir / "MyFontIndexed.png"))
 
       case _ =>
         fail(
@@ -126,7 +189,7 @@ class GeneratorAcceptanceTests extends munit.FunSuite {
 
     val files =
       IndigoGenerators("com.example.test").embedMarkdownTable
-        .asEnum("Armour", os.pwd / "test-assets" / "data" / "armour.md")
+        .asEnum("Armour", workspaceDir / "test-assets" / "data" / "armour.md")
         .toSourcePaths(targetDir)
 
     files.headOption match {
@@ -192,7 +255,7 @@ class GeneratorAcceptanceTests extends munit.FunSuite {
 
   test("Can generate Aseprite Data") {
 
-    val jsonFile = os.pwd / "test-assets" / "captain" / "Captain Clown Nose Data.json"
+    val jsonFile = workspaceDir / "test-assets" / "captain" / "Captain Clown Nose Data.json"
 
     val files =
       IndigoGenerators("com.example.test")

@@ -1,8 +1,6 @@
 package indigo.platform.renderer
 
-import indigo.GameLauncher
 import indigo.facades.WebGL2RenderingContext
-import indigo.platform.assets.DynamicText
 import indigo.platform.events.GlobalEventStream
 import indigo.platform.renderer.shared.ContextAndCanvas
 import indigo.platform.renderer.shared.LoadedTextureAsset
@@ -18,13 +16,13 @@ import org.scalajs.dom.Element
 import org.scalajs.dom.WebGLRenderingContext
 import org.scalajs.dom.html
 
+import scala.annotation.nowarn
 import scala.scalajs.js.Dynamic
-import scala.scalajs.js.JSConverters._
+import scala.scalajs.js.JSConverters.*
 
 final class RendererInitialiser(
     renderingTechnology: RenderingTechnology,
-    globalEventStream: GlobalEventStream,
-    dynamicText: DynamicText
+    globalEventStream: GlobalEventStream
 ) {
 
   def setup(
@@ -49,10 +47,10 @@ final class RendererInitialiser(
           new RendererWebGL1(config, loadedTextureAssets.toJSArray, cNc, globalEventStream)
 
         case RenderingTechnology.WebGL2 =>
-          new RendererWebGL2(config, loadedTextureAssets.toJSArray, cNc, globalEventStream, dynamicText)
+          new RendererWebGL2(config, loadedTextureAssets.toJSArray, cNc, globalEventStream)
 
         case RenderingTechnology.WebGL2WithFallback =>
-          new RendererWebGL2(config, loadedTextureAssets.toJSArray, cNc, globalEventStream, dynamicText)
+          new RendererWebGL2(config, loadedTextureAssets.toJSArray, cNc, globalEventStream)
       }
 
     r.init(shaders)
@@ -79,18 +77,19 @@ final class RendererInitialiser(
       "scalafix:DisableSyntax.var"
     )
   )
+  @nowarn("msg=unused")
   def createNamedCanvas(width: Int, height: Int, name: String, appendToParent: Option[Element]): html.Canvas = {
     var canvas: html.Canvas = dom.document.getElementById(name).asInstanceOf[html.Canvas]
 
     if (canvas == null) {
       canvas = dom.document.createElement("canvas").asInstanceOf[html.Canvas]
 
-      appendToParent match {
+      appendToParent match
         case Some(parent) =>
           parent.appendChild(canvas)
+
         case None =>
           ()
-      }
 
       canvas.id = name
       canvas.width = width
@@ -152,7 +151,7 @@ final class RendererInitialiser(
     }
 
     def useWebGL2(): (WebGLRenderingContext, RenderingTechnology) = {
-      val gl2 = (canvas.getContext("webgl2", args)).asInstanceOf[WebGLRenderingContext]
+      val gl2 = canvas.getContext("webgl2", args).asInstanceOf[WebGLRenderingContext]
       (gl2, RenderingTechnology.WebGL2)
     }
 
@@ -187,7 +186,7 @@ final class RendererInitialiser(
         RenderingTechnology.WebGL1
 
       case RenderingTechnology.WebGL2 =>
-        val gl2 = (tempCanvas.getContext("webgl2", args)).asInstanceOf[WebGLRenderingContext]
+        val gl2 = tempCanvas.getContext("webgl2", args).asInstanceOf[WebGLRenderingContext]
 
         if (gl2 == null)
           throw new Exception("WebGL 2.0 required by indigo game. This browser does not appear to support WebGL 2.0.")
@@ -201,7 +200,7 @@ final class RendererInitialiser(
         }
 
       case RenderingTechnology.WebGL2WithFallback =>
-        var gl2 = (tempCanvas.getContext("webgl2", args)).asInstanceOf[WebGLRenderingContext]
+        var gl2 = tempCanvas.getContext("webgl2", args).asInstanceOf[WebGLRenderingContext]
 
         if (gl2 == null) {
           IndigoLogger.info("This browser does not appear to support WebGL 2.0, trying WebGL 1.0.")

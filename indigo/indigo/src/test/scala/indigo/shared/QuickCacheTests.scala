@@ -1,6 +1,9 @@
 package indigo.shared
 
+import scala.annotation.nowarn
+
 @SuppressWarnings(Array("scalafix:DisableSyntax.var"))
+@nowarn("msg=unused")
 class QuickCacheTests extends munit.FunSuite {
 
   test("cache behaviour checks") {
@@ -10,7 +13,7 @@ class QuickCacheTests extends munit.FunSuite {
 
     assertEquals(cache.keys.map(_.toString), List("ten"))
 
-    assertEquals(cache.all.map(p => (p._1.toString, p._2)), List(("ten" -> 10)))
+    assertEquals(cache.all.map(p => (p._1.toString, p._2)), List("ten" -> 10))
 
     assertEquals(cache.fetch(CacheKey("ten")), Some(10))
 
@@ -81,7 +84,7 @@ class QuickCacheTests extends munit.FunSuite {
 
     assertEquals(cache.keys.map(_.toString), List("ten"))
 
-    assertEquals(cache.all.map(p => (p._1.toString, p._2)), List(("ten" -> 10)))
+    assertEquals(cache.all.map(p => (p._1.toString, p._2)), List("ten" -> 10))
   }
 
 }

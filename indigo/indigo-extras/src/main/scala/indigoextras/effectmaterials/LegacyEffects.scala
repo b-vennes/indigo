@@ -5,10 +5,11 @@ import indigo.shared.collections.Batch
 import indigo.shared.datatypes.Fill
 import indigo.shared.datatypes.RGB
 import indigo.shared.datatypes.RGBA
+import indigo.shared.datatypes.Rectangle
 import indigo.shared.materials.FillType
 import indigo.shared.materials.Material
-import indigo.shared.materials.ShaderData
 import indigo.shared.shader.EntityShader
+import indigo.shared.shader.ShaderData
 import indigo.shared.shader.ShaderId
 import indigo.shared.shader.ShaderPrimitive
 import indigo.shared.shader.ShaderPrimitive.rawJSArray
@@ -17,7 +18,6 @@ import indigo.shared.shader.Uniform
 import indigo.shared.shader.UniformBlock
 import indigo.shared.shader.UniformBlockName
 import indigo.shared.shader.library.IndigoUV.VertexEnv
-import indigo.shared.shader.library.NoOp
 import indigoextras.effectmaterials.shaders.LegacyEffectsShaders
 
 final case class LegacyEffects(
@@ -29,8 +29,7 @@ final case class LegacyEffects(
     border: Border,
     glow: Glow,
     fillType: FillType
-) extends Material
-    derives CanEqual:
+) extends Material derives CanEqual:
 
   def withAlpha(newAlpha: Double): LegacyEffects =
     this.copy(alpha = newAlpha)
@@ -60,6 +59,10 @@ final case class LegacyEffects(
     withFillType(FillType.Stretch)
   def tile: LegacyEffects =
     withFillType(FillType.Tile)
+  def nineSlice(center: Rectangle): LegacyEffects =
+    withFillType(FillType.NineSlice(center))
+  def nineSlice(top: Int, right: Int, bottom: Int, left: Int): LegacyEffects =
+    withFillType(FillType.NineSlice(top, right, bottom, left))
 
   lazy val toShaderData: ShaderData =
     val overlayType: Float =
@@ -69,11 +72,24 @@ final case class LegacyEffects(
         case _: Fill.RadialGradient => 2.0
 
     val imageFillType: Float =
-      fillType match {
-        case FillType.Normal  => 0.0
-        case FillType.Stretch => 1.0
-        case FillType.Tile    => 2.0
-      }
+      fillType match
+        case FillType.Normal       => 0.0
+        case FillType.Stretch      => 1.0
+        case FillType.Tile         => 2.0
+        case FillType.NineSlice(_) => 3.0
+
+    val nineSliceCenter: scalajs.js.Array[Float] =
+      fillType match
+        case FillType.NineSlice(center) =>
+          scalajs.js.Array(
+            center.x.toFloat,
+            center.y.toFloat,
+            center.width.toFloat,
+            center.height.toFloat
+          )
+
+        case _ =>
+          scalajs.js.Array(0.0f, 0.0f, 0.0f, 0.0f)
 
     ShaderData(
       LegacyEffects.entityShader.id,
@@ -87,12 +103,15 @@ final case class LegacyEffects(
                 alpha.toFloat,
                 saturation.toFloat,
                 overlayType,
-                imageFillType,
-                tint.r.toFloat,
-                tint.g.toFloat,
-                tint.b.toFloat,
-                tint.a.toFloat
-              )
+                imageFillType
+              ) ++
+                nineSliceCenter ++
+                scalajs.js.Array(
+                  tint.r.toFloat,
+                  tint.g.toFloat,
+                  tint.b.toFloat,
+                  tint.a.toFloat
+                )
             )
           ) ++ overlay.toUniformData("LegacyEffects") ++
             // BORDER_COLOR (vec4), GLOW_COLOR (vec4), EFFECT_AMOUNTS (vec4)

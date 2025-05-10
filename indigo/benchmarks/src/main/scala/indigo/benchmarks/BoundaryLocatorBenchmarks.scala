@@ -1,11 +1,10 @@
 package indigo.benchmarks
 
 import indigo.*
-import indigo.platform.assets.DynamicText
 import indigo.shared.AnimationsRegister
 import indigo.shared.FontRegister
-import japgolly.scalajs.benchmark._
-import japgolly.scalajs.benchmark.gui._
+import japgolly.scalajs.benchmark.*
+import japgolly.scalajs.benchmark.gui.*
 
 object BoundaryLocatorBenchmarks:
 
@@ -15,7 +14,7 @@ object BoundaryLocatorBenchmarks:
   fontRegister.register(TextSamples.fontInfo)
 
   val boundaryLocator: BoundaryLocator =
-    new BoundaryLocator(new AnimationsRegister, fontRegister, new DynamicText)
+    new BoundaryLocator(new AnimationsRegister, fontRegister)
 
   val suite = GuiSuite(
     Suite("BoundaryLocator Benchmarks")(
@@ -89,5 +88,5 @@ object TextSamples {
   val fontInfo = FontInfo(fontKey, 256, 256, FontChar("?", 0, 0, 16, 16)).addChars(chars)
 
   val text: Text[?] =
-    Text("abcdefghijklmnopqrstuvwxyz", 50, 50, 1, fontKey, material).alignLeft
+    Text("abcdefghijklmnopqrstuvwxyz", 50, 50, fontKey, material).alignLeft
 }

@@ -1,10 +1,10 @@
 package com.example.perf
 
-import indigo._
+import indigo.*
 import indigo.json.Json
 import indigoextras.subsystems.FPSCounter
 
-import scala.scalajs.js.annotation._
+import scala.scalajs.js.annotation.*
 
 @JSExportTopLevel("IndigoGame")
 object PerfGame extends IndigoDemo[Unit, Dude, DudeModel, Unit] {
@@ -51,7 +51,10 @@ object PerfGame extends IndigoDemo[Unit, Dude, DudeModel, Unit] {
         )
         .withAssets(PerfAssets.assets)
         .withFonts(Fonts.fontInfo)
-        .withSubSystems(FPSCounter(Point(10, 565)))
+        .withSubSystems(
+          FPSCounter(Fonts.fontKey, PerfAssets.smallFontName)
+            .moveTo(10, 565)
+        )
         .withShaders(
           StandardShaders.Bitmap,
           StandardShaders.ImageEffects,
@@ -73,7 +76,6 @@ object PerfGame extends IndigoDemo[Unit, Dude, DudeModel, Unit] {
           Dude(
             aseprite,
             spriteAndAnimations.sprite
-              .withDepth(Depth(3))
               .withRef(16, 16) // Initial offset, so when talk about his position it's the center of the sprite
               .moveTo(
                 viewportWidth / 2 / magnificationLevel,

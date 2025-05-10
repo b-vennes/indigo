@@ -1,8 +1,10 @@
 package indigo.benchmarks
 
 import indigo.*
-import japgolly.scalajs.benchmark._
-import japgolly.scalajs.benchmark.gui._
+import japgolly.scalajs.benchmark.*
+import japgolly.scalajs.benchmark.gui.*
+
+import scala.annotation.nowarn
 
 import scalajs.js
 import scalajs.js.JSConverters.*
@@ -28,6 +30,7 @@ object BatchBenchmarks:
     Batch(a1.head) |+| (Batch(a1.tail) |+| (Batch(a2) |+| Batch(a3) |+| Batch(a4)) |+| Batch.empty)
   }
 
+  @nowarn("msg=discarded")
   val suite = GuiSuite(
     Suite("Batch Benchmarks")(
       Benchmark("concat - list") {

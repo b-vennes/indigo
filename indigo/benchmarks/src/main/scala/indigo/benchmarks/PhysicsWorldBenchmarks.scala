@@ -3,23 +3,23 @@ package indigo.benchmarks
 import indigo.*
 import indigo.physics.*
 import indigo.syntax.*
-import japgolly.scalajs.benchmark._
-import japgolly.scalajs.benchmark.gui._
+import japgolly.scalajs.benchmark.*
+import japgolly.scalajs.benchmark.gui.*
 
 object PhysicsWorldBenchmarks:
 
   def render[A]: Collider[A] => SceneNode = {
-    case Collider.Circle(_, bounds, _, _, _, _, _, _, _, _) =>
+    case c: Collider.Circle[A] =>
       Shape.Circle(
-        bounds.position.toPoint,
-        bounds.radius.toInt,
+        c.bounds.position.toPoint,
+        c.bounds.radius.toInt,
         Fill.Color(RGBA.White.withAlpha(0.2)),
         Stroke(1, RGBA.White)
       )
 
-    case Collider.Box(_, bounds, _, _, _, _, _, _, _, _) =>
+    case c: Collider.Box[A] =>
       Shape.Box(
-        bounds.toRectangle,
+        c.bounds.toRectangle,
         Fill.Color(RGBA.White.withAlpha(0.2)),
         Stroke(1, RGBA.White)
       )
@@ -61,8 +61,7 @@ object TestWorlds:
         ).makeStatic
       }
 
-    World
-      .empty[MyTag](SimulationSettings(BoundingBox(0, 0, 1280, 920)))
+    World(SimulationSettings(BoundingBox(0, 0, 1280, 920)))
       .addForces(Vector2(0, 600))
       .withResistance(Resistance(0.01))
       .withColliders(circles)

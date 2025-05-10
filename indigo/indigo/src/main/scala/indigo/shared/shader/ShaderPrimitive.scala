@@ -1,6 +1,5 @@
 package indigo.shared.shader
 
-import indigo.shared.datatypes.Depth
 import indigo.shared.datatypes.Matrix4
 import indigo.shared.datatypes.Point
 import indigo.shared.datatypes.RGB
@@ -12,12 +11,13 @@ import indigo.shared.datatypes.Vector2
 import indigo.shared.datatypes.Vector3
 import indigo.shared.datatypes.Vector4
 import indigo.shared.datatypes.mutable.CheapMatrix4
+import indigo.shared.geometry.Vertex
 import indigo.shared.time.Millis
 import indigo.shared.time.Seconds
 
 import scala.collection.immutable.ArraySeq
 import scala.reflect.ClassTag
-import scala.scalajs.js.JSConverters._
+import scala.scalajs.js.JSConverters.*
 
 sealed trait ShaderPrimitive derives CanEqual:
   def length: Int
@@ -67,9 +67,6 @@ object ShaderPrimitive:
     def apply(fill: Long): float =
       float(fill.toFloat)
 
-    def fromDepth(depth: Depth): float =
-      float(depth.toDouble)
-
     def fromMillis(millis: Millis): float =
       float(millis.toDouble)
 
@@ -103,6 +100,7 @@ object ShaderPrimitive:
     def fromPoint(pt: Point): vec2    = vec2(pt.x.toFloat, pt.y.toFloat)
     def fromSize(s: Size): vec2       = vec2(s.width.toFloat, s.height.toFloat)
     def fromVector2(v: Vector2): vec2 = vec2(v.x, v.y)
+    def fromVertex(v: Vertex): vec2   = vec2(v.x, v.y)
 
     given IsShaderValue[vec2] =
       IsShaderValue.create[vec2](length, _.toArray)

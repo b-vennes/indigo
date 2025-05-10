@@ -16,7 +16,6 @@ import indigo.shared.events.KeyboardEvent
 import indigo.shared.events.MouseButton
 import indigo.shared.events.MouseEvent
 import indigo.shared.events.NetworkEvent
-import indigo.shared.events.NetworkEvent.*
 import indigo.shared.events.PointerEvent
 import indigo.shared.events.PointerEvent.*
 import indigo.shared.events.PointerType
@@ -216,7 +215,7 @@ final class WorldEvents:
         val pointerType      = e.toPointerType
 
         globalEventStream.pushGlobalEvent(
-          PointerEnter(
+          Enter(
             position,
             buttons,
             e.altKey,
@@ -258,7 +257,7 @@ final class WorldEvents:
         val pointerType      = e.toPointerType
 
         globalEventStream.pushGlobalEvent(
-          PointerLeave(
+          Leave(
             position,
             buttons,
             e.altKey,
@@ -307,7 +306,7 @@ final class WorldEvents:
         )
 
         globalEventStream.pushGlobalEvent(
-          PointerDown(
+          Down(
             position,
             buttons,
             e.altKey,
@@ -357,7 +356,7 @@ final class WorldEvents:
         pointerButtons.getOrElse(e.pointerId, Batch.empty).find(_._1 == e.button) match {
           case Some((btn, downTime)) if btn == e.button && Date.now() - downTime.getTime() <= clickTimeMs =>
             globalEventStream.pushGlobalEvent(
-              PointerClick(
+              Click(
                 position,
                 buttons,
                 e.altKey,
@@ -390,7 +389,7 @@ final class WorldEvents:
         )
 
         globalEventStream.pushGlobalEvent(
-          PointerUp(
+          Up(
             position,
             buttons,
             e.altKey,
@@ -437,7 +436,7 @@ final class WorldEvents:
         val pointerType      = e.toPointerType
 
         globalEventStream.pushGlobalEvent(
-          PointerMove(
+          Move(
             position,
             buttons,
             e.altKey,
@@ -480,7 +479,7 @@ final class WorldEvents:
         val pointerType      = e.toPointerType
 
         globalEventStream.pushGlobalEvent(
-          PointerCancel(
+          Cancel(
             position,
             buttons,
             e.altKey,
@@ -509,7 +508,7 @@ final class WorldEvents:
         val pointerType      = e.toPointerType
 
         globalEventStream.pushGlobalEvent(
-          PointerOut(
+          Out(
             position,
             buttons,
             e.altKey,

@@ -5,7 +5,6 @@ import indigo.shared.Outcome
 import indigo.shared.collections.Batch
 import indigo.shared.events.GlobalEvent
 import indigo.shared.scenegraph.SceneUpdateFragment
-import indigo.shared.subsystems.SubSystemContext
 
 import scalajs.js
 
@@ -30,19 +29,17 @@ final class SubSystemsRegister[Model] {
         events
     }
 
-  // @SuppressWarnings(Array("scalafix:DisableSyntax.asInstanceOf"))
   private def initialiseSubSystem(subSystem: SubSystem[Model]): Outcome[RegisteredSubSystem[Model]] = {
     val key = subSystem.id.toString
     val res = RegisteredSubSystem(key, subSystem)
 
     subSystem.initialModel.map { model =>
-      stateMap.put(key, model.asInstanceOf[Object])
+      stateMap.update(key, model.asInstanceOf[Object])
 
       res
     }
   }
 
-  // @SuppressWarnings(Array("scalafix:DisableSyntax.asInstanceOf"))
   def update(
       context: SubSystemContext[Unit],
       gameModel: Model,
@@ -76,7 +73,7 @@ final class SubSystemsRegister[Model] {
                     Outcome.raiseError(e)
 
                   case Outcome.Result(state, globalEvents) =>
-                    stateMap.put(key, state.asInstanceOf[Object])
+                    stateMap.update(key, state.asInstanceOf[Object])
                     Outcome(globalEvents)
                 }
               }

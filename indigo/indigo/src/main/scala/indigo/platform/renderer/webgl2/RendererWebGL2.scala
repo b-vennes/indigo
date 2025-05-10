@@ -1,9 +1,7 @@
 package indigo.platform.renderer.webgl2
 
-import indigo.BindingKey
 import indigo.Rectangle
 import indigo.facades.WebGL2RenderingContext
-import indigo.platform.assets.DynamicText
 import indigo.platform.events.GlobalEventStream
 import indigo.platform.renderer.Renderer
 import indigo.platform.renderer.ScreenCaptureConfig
@@ -14,7 +12,6 @@ import indigo.platform.renderer.shared.FrameBufferFunctions
 import indigo.platform.renderer.shared.LoadedTextureAsset
 import indigo.platform.renderer.shared.TextureLookupResult
 import indigo.platform.renderer.shared.WebGLHelper
-import indigo.shared.ImageType
 import indigo.shared.QuickCache
 import indigo.shared.assets.AssetName
 import indigo.shared.assets.AssetPath
@@ -33,21 +30,15 @@ import indigo.shared.platform.RendererConfig
 import indigo.shared.scenegraph.Blend
 import indigo.shared.scenegraph.BlendFactor
 import indigo.shared.shader.RawShaderCode
-import indigo.shared.shader.ShaderId
-import indigo.shared.shader.StandardShaders
 import indigo.shared.time.Seconds
 import org.scalajs.dom
-import org.scalajs.dom.Element
-import org.scalajs.dom.OffscreenCanvas
 import org.scalajs.dom.WebGLBuffer
 import org.scalajs.dom.WebGLFramebuffer
 import org.scalajs.dom.WebGLProgram
 import org.scalajs.dom.WebGLRenderingContext
-import org.scalajs.dom.WebGLRenderingContext._
+import org.scalajs.dom.WebGLRenderingContext.*
 import org.scalajs.dom.html
 
-import java.util.Base64
-import scala.scalajs.js.Dynamic
 import scala.scalajs.js.typedarray.Float32Array
 
 @SuppressWarnings(Array("scalafix:DisableSyntax.null"))
@@ -55,8 +46,7 @@ final class RendererWebGL2(
     config: RendererConfig,
     loadedTextureAssets: scalajs.js.Array[LoadedTextureAsset],
     cNc: ContextAndCanvas,
-    globalEventStream: GlobalEventStream,
-    dynamicText: DynamicText
+    globalEventStream: GlobalEventStream
 ) extends Renderer {
 
   val renderingTechnology: RenderingTechnology = RenderingTechnology.WebGL2
@@ -126,9 +116,7 @@ final class RendererWebGL2(
       projectionUBOBuffer,
       frameDataUBOBuffer,
       cloneReferenceUBOBuffer,
-      lightDataUBOBuffer,
-      dynamicText,
-      WebGLHelper.createAndBindTexture(gl2)
+      lightDataUBOBuffer
     ).init()
   private val layerMergeRenderInstance: LayerMergeRenderer =
     new LayerMergeRenderer(gl2, frameDataUBOBuffer)
@@ -166,7 +154,7 @@ final class RendererWebGL2(
 
     shaders.foreach { shader =>
       if (!customShaders.contains(shader.id.toString))
-        customShaders.put(
+        customShaders.update(
           shader.id.toString,
           WebGLHelper.shaderProgramSetup(gl, shader.id.toString, shader)
         )
@@ -267,9 +255,9 @@ final class RendererWebGL2(
           drawScene(
             ProcessedSceneData(
               _prevSceneData.layers.filter(l =>
-                l.bindingKey match {
-                  case Some(bk) => option.excludeLayers.exists(_ == bk) == false
-                  case None     => true
+                l.layerKey match {
+                  case Some(key) => option.excludeLayers.exists(_ == key) == false
+                  case None      => true
                 }
               ),
               _prevSceneData.cloneBlankDisplayObjects,
@@ -389,18 +377,13 @@ final class RendererWebGL2(
       }
 
       // Merge the layer buffer onto the staging buffer, this clears the magnification
-      layerMergeRenderInstance.merge(
+      layerMergeRenderInstance.mergeToStagingBuffer(
         projection,
         layerEntityFrameBuffer,
-        emptyFrameBuffer,
-        Some(scalingFrameBuffer),
+        scalingFrameBuffer,
         lastWidth,
         lastHeight,
-        transparentBlack,
-        false,
-        customShaders,
-        StandardShaders.NormalBlend.id,
-        scalajs.js.Array()
+        customShaders
       )
 
       // Set the layer blend mode
@@ -419,16 +402,13 @@ final class RendererWebGL2(
       }
 
       // Merge the layer buffer onto the back buffer
-      layerMergeRenderInstance.merge(
+      layerMergeRenderInstance.mergeToBackBuffer(
         orthographicProjectionMatrixNoMag,
         scalingFrameBuffer,
         if (!greenIsTarget) blueDstFrameBuffer
         else greenDstFrameBuffer, // Inverted condition, because by now it's flipped.
-        None,
         lastWidth,
         lastHeight,
-        transparentBlack,
-        false,
         customShaders,
         layer.shaderId,
         layer.shaderUniformData
@@ -437,15 +417,13 @@ final class RendererWebGL2(
 
     // transfer the back buffer to the canvas
     WebGLHelper.setNormalBlend(gl)
-    layerMergeRenderInstance.merge(
+
+    layerMergeRenderInstance.mergeToCanvas(
       orthographicProjectionMatrixNoMagFlipped,
       if (!greenIsTarget) greenDstFrameBuffer else blueDstFrameBuffer, // Inverted condition, because outside the loop.
-      emptyFrameBuffer,                                                // just giving it something to use...
-      None,
       lastWidth,
       lastHeight,
       clearColor,
-      true,
       customShaders,
       sceneData.shaderId,
       sceneData.shaderUniformData
@@ -461,21 +439,9 @@ final class RendererWebGL2(
   }
 
   def blitBuffers(from: WebGLFramebuffer, to: WebGLFramebuffer): Unit = {
-
-    gl2.clearColor(0, 0, 0, 0)
-
-    // Bind and clear 'to'
-    gl2.bindFramebuffer(FRAMEBUFFER, to)
-    gl2.clear(COLOR_BUFFER_BIT)
-
-    // Blit 'from' to 'to'
     gl2.bindFramebuffer(WebGL2RenderingContext.READ_FRAMEBUFFER, from)
     gl2.bindFramebuffer(WebGL2RenderingContext.DRAW_FRAMEBUFFER, to)
     gl2.blitFramebuffer(0, lastHeight, lastWidth, 0, 0, lastHeight, lastWidth, 0, COLOR_BUFFER_BIT, NEAREST)
-    gl2.bindFramebuffer(WebGL2RenderingContext.READ_FRAMEBUFFER, null)
-    gl2.bindFramebuffer(WebGL2RenderingContext.DRAW_FRAMEBUFFER, null)
-
-    gl2.bindFramebuffer(FRAMEBUFFER, to)
   }
 
   def clearBuffer(buffer: WebGLFramebuffer): Unit = {

@@ -1,9 +1,9 @@
 package indigo.shared.scenegraph
 
-import indigo.shared.BoundaryLocator
 import indigo.shared.collections.Batch
-import indigo.shared.datatypes._
+import indigo.shared.datatypes.*
 import indigo.shared.events.GlobalEvent
+import indigo.shared.shader.ToUniformBlock
 import indigo.shared.shader.UniformBlock
 
 /** Represents many identical clones of the same clone blank, differentiated only by their shader data. Intended for use
@@ -11,10 +11,8 @@ import indigo.shared.shader.UniformBlock
   */
 final case class Mutants(
     id: CloneId,
-    depth: Depth,
     uniformBlocks: Array[Batch[UniformBlock]]
-) extends DependentNode[Mutants]
-    derives CanEqual:
+) extends DependentNode[Mutants] derives CanEqual:
 
   lazy val scale: Vector2    = Vector2.one
   lazy val rotation: Radians = Radians.zero
@@ -25,9 +23,6 @@ final case class Mutants(
   def withCloneId(newCloneId: CloneId): Mutants =
     this.copy(id = newCloneId)
 
-  def withDepth(newDepth: Depth): Mutants =
-    this.copy(depth = newDepth)
-
   def addBlocks(additionalBlocks: Array[Batch[UniformBlock]]): Mutants =
     this.copy(uniformBlocks = uniformBlocks ++ additionalBlocks)
 
@@ -36,16 +31,20 @@ final case class Mutants(
 
 object Mutants:
 
-  def apply(id: CloneId, uniformBlocks: Array[Batch[UniformBlock]]): Mutants =
+  def apply[A](id: CloneId, uniformBlocks: Array[Batch[A]])(using toUBO: ToUniformBlock[A]): Mutants =
     Mutants(
       id,
-      Depth.zero,
-      uniformBlocks
+      uniformBlocks.map(_.map(toUBO.toUniformBlock))
     )
 
   def apply(id: CloneId, uniformBlocks: Batch[UniformBlock]): Mutants =
     Mutants(
       id,
-      Depth.zero,
       Array(uniformBlocks)
+    )
+
+  def apply[A](id: CloneId, uniformBlocks: Batch[A])(using toUBO: ToUniformBlock[A]): Mutants =
+    Mutants(
+      id,
+      Array(uniformBlocks.map(toUBO.toUniformBlock))
     )

@@ -8,22 +8,21 @@ import indigo.shared.IndigoLogger
 import indigo.shared.Outcome
 import indigo.shared.collections.Batch
 import indigo.shared.config.GameConfig
+import indigo.shared.config.GameViewport
 import indigo.shared.dice.Dice
 import indigo.shared.events.FrameTick
 import indigo.shared.events.GlobalEvent
 import indigo.shared.events.IndigoSystemEvent
 import indigo.shared.events.InputEvent
 import indigo.shared.events.InputState
-import indigo.shared.platform.ProcessedSceneData
 import indigo.shared.platform.SceneProcessor
 import indigo.shared.scenegraph.SceneUpdateFragment
 import indigo.shared.time.GameTime
 import indigo.shared.time.Millis
-import indigo.shared.time.Seconds
 
+import scala.annotation.nowarn
 import scala.collection.mutable
-import scala.scalajs.js.Date
-import scala.scalajs.js.JSConverters._
+import scala.scalajs.js.JSConverters.*
 
 final class GameLoop[StartUpData, GameModel, ViewModel](
     rebuildGameLoop: AssetCollection => Unit,
@@ -67,6 +66,7 @@ final class GameLoop[StartUpData, GameModel, ViewModel](
   def lock(): Unit                 = _frameLocked = true
   def unlock(): Unit               = _frameLocked = false
 
+  @nowarn("msg=unused")
   private val runner: (Double, Double, Double) => Unit =
     gameConfig.frameRateLimit match
       case None =>
@@ -96,13 +96,8 @@ final class GameLoop[StartUpData, GameModel, ViewModel](
             gameEngine.platform.tick(gameEngine.gameLoop(t))
           else gameEngine.platform.tick(loop(lastUpdateTime))
 
-  @SuppressWarnings(Array("scalafix:DisableSyntax.null"))
   def kill(): Unit =
     _running = false
-    _gameModelState = null.asInstanceOf[GameModel]
-    _viewModelState = null.asInstanceOf[ViewModel]
-    _runningTimeReference = 0
-    _inputState = null
     ()
 
   def loop(lastUpdateTime: Double): Double => Unit = { time =>
@@ -132,7 +127,13 @@ final class GameLoop[StartUpData, GameModel, ViewModel](
     val context =
       new Context[StartUpData](
         gameEngine.startUpData,
-        Context.Frame(Dice.fromSeconds(gameTime.running), gameTime, _inputState),
+        Context.Frame(
+          Dice.fromSeconds(gameTime.running),
+          gameTime,
+          _inputState,
+          GameViewport(renderer.screenWidth, renderer.screenHeight),
+          gameConfig.magnification
+        ),
         _services
       )
 

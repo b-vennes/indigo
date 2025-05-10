@@ -1,24 +1,30 @@
 package indigo.shared.shader.library
 
-import indigo.shared.shader.library.IndigoUV.*
 import ultraviolet.syntax.*
+
+import scala.annotation.nowarn
 
 object Blit:
 
   trait Env extends Lighting.LightEnv {
-    val FILLTYPE: highp[Float] = 0.0f
+    val FILLTYPE: highp[Float]         = 0.0f
+    val NINE_SLICE_CENTER: highp[vec4] = vec4(0.0f)
   }
   object Env:
     val reference: Env = new Env {}
 
-  case class IndigoBitmapData(FILLTYPE: highp[Float])
+  case class IndigoBitmapData(
+      FILLTYPE: highp[Float],
+      NINE_SLICE_CENTER: highp[vec4]
+  )
 
+  @nowarn("msg=unused")
   inline def fragment =
     Shader[Env] { env =>
       import TileAndStretch.*
 
       // Delegates
-      val _tileAndStretchChannel: (Int, vec4, sampler2D.type, vec2, vec2, vec2, vec2, vec2) => vec4 =
+      val _tileAndStretchChannel: (Int, vec4, sampler2D.type, vec2, vec2, vec2, vec2, vec2, vec4) => vec4 =
         tileAndStretchChannel
 
       ubo[IndigoBitmapData]
@@ -32,7 +38,8 @@ object Blit:
           env.CHANNEL_0_SIZE,
           env.UV,
           env.SIZE,
-          env.TEXTURE_SIZE
+          env.TEXTURE_SIZE,
+          env.NINE_SLICE_CENTER
         )
         env.CHANNEL_1 = _tileAndStretchChannel(
           env.FILLTYPE.toInt,
@@ -42,7 +49,8 @@ object Blit:
           env.CHANNEL_0_SIZE,
           env.UV,
           env.SIZE,
-          env.TEXTURE_SIZE
+          env.TEXTURE_SIZE,
+          env.NINE_SLICE_CENTER
         )
         env.CHANNEL_2 = _tileAndStretchChannel(
           env.FILLTYPE.toInt,
@@ -52,7 +60,8 @@ object Blit:
           env.CHANNEL_0_SIZE,
           env.UV,
           env.SIZE,
-          env.TEXTURE_SIZE
+          env.TEXTURE_SIZE,
+          env.NINE_SLICE_CENTER
         )
         env.CHANNEL_3 = _tileAndStretchChannel(
           env.FILLTYPE.toInt,
@@ -62,7 +71,8 @@ object Blit:
           env.CHANNEL_0_SIZE,
           env.UV,
           env.SIZE,
-          env.TEXTURE_SIZE
+          env.TEXTURE_SIZE,
+          env.NINE_SLICE_CENTER
         )
 
         env.CHANNEL_0
